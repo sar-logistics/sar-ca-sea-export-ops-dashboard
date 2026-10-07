@@ -2066,10 +2066,10 @@ const CLIENT_ID = '1003981856709-v65iviops1tlpecq881qudffmateoloo.apps.googleuse
 const MONGO_API = '/api/mongo';
 const BATCH_API = '/api/mongo-batch';
 const WIP_API   = '/api/wip';
-const CANADA_API = '/api/canada-batch';
+const CANADA_API = '/api/canada-data';
 
 // ── CANADA: data adapter, SLA and amount helpers ─────────────
-// /api/canada-batch returns { fields:[...], rows:[[...]], meta:{...} } (one row per Shipment No).
+// /api/canada-data returns { fields:[...], rows:[[...]], meta:{...} } (one row per Shipment No).
 // caExpand() turns it into the same record shape the Thailand renderers use.
 let caMeta = {};
 let caSlaDays = 10;                       // Open Jobs SLA — 10 or 15 days from Job Date
