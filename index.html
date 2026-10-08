@@ -4350,7 +4350,7 @@ function renderUnbilledRev() {
   const filtered   = filterByDate(allSRR, pageId);
   populateFilters(pageId, filtered);
   const filteredDD = applyAdditionalFilters(applyDropdownFilters(filtered, pageId), pageId);
-  // Canada: JPA "Unbilled Revenue (D=A-C)" ≠ 0 — one value per job
+  // Canada: unbilledRevenue = sum of the job's charge lines in estimatedvsactual (set by /api/mongo-batch)
   const flaggedDD  = filteredDD.filter(r => nzAmt(r.unbilledRevenue));
   _renderJPAFlaggedReport(pageId, 'ur', 'Unbilled Revenue', label, view, cols, filteredDD, flaggedDD);
   caSetAmountKpi('ur', flaggedDD, 'unbilledRevenue', 'Unbilled Revenue', label);
@@ -4364,7 +4364,7 @@ function renderUnpostedCost() {
   const filtered   = filterByDate(allSRR, pageId);
   populateFilters(pageId, filtered);
   const filteredDD = applyAdditionalFilters(applyDropdownFilters(filtered, pageId), pageId);
-  // Canada: JPA "Unposted Cost (H = E-G)" ≠ 0
+  // Canada: unpostedCost = sum of the job's charge-line unbilledCost in estimatedvsactual
   const flaggedDD  = filteredDD.filter(r => nzAmt(r.unpostedCost));
   _renderJPAFlaggedReport(pageId, 'uc', 'Unposted Cost', label, view, cols, filteredDD, flaggedDD);
   caSetAmountKpi('uc', flaggedDD, 'unpostedCost', 'Unposted Cost', label);
@@ -5092,10 +5092,11 @@ const DV_COLS_SRR = [
   { key:'operationLockDate',   label:'Operation Lock',     date:true      },
   { key:'provisionalRevenue',  label:'Provisional Revenue (A)', num:true  },
   { key:'billedRevenue',       label:'Billed Revenue (C)',      num:true  },
-  { key:'unbilledRevenue',     label:'Unbilled Revenue (D=A-C)',num:true  },
+  { key:'unbilledRevenue',     label:'Unbilled Revenue',        num:true  },
+  { key:'evaChargeLines',      label:'Charge Lines (Est. vs Actual)', num:true, plain:true },
   { key:'provisionalCost',     label:'Provisional Cost (E)',    num:true  },
   { key:'postedCost',          label:'Posted Cost (G)',         num:true  },
-  { key:'unpostedCost',        label:'Unposted Cost (H=E-G)',   num:true  },
+  { key:'unpostedCost',        label:'Unposted Cost',           num:true  },
 ];
 
 const DV_COLS_WIP = [
