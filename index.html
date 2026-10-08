@@ -2066,10 +2066,10 @@ const CLIENT_ID = '1003981856709-v65iviops1tlpecq881qudffmateoloo.apps.googleuse
 const MONGO_API = '/api/mongo';
 const BATCH_API = '/api/mongo-batch';
 const WIP_API   = '/api/wip';
-const CANADA_API = '/api/canada-data';
+const CANADA_API = BATCH_API;   // /api/mongo-batch (Canada version)
 
 // ── CANADA: data adapter, SLA and amount helpers ─────────────
-// /api/canada-data returns { fields:[...], rows:[[...]], meta:{...} } (one row per Shipment No).
+// /api/mongo-batch returns { fields:[...], rows:[[...]], meta:{...} } (one row per Shipment No).
 // caExpand() turns it into the same record shape the Thailand renderers use.
 let caMeta = {};
 let caSlaDays = 10;                       // Open Jobs SLA — 10 or 15 days from Job Date
@@ -2104,12 +2104,54 @@ function caExpand(data) {
     return r;
   });
 }
+const CA_FIELDS = [
+  'shipmentId','direction','jobDate','periodDate','etd','eta',
+  'branch','zone','tradeLane','jobOwner','salesPerson','customer',
+  'carrierName','vessel','origin','destination','mblNumber','houseRef','consolId',
+  'cargoType','containerTeu','consigneeName','consignorName','incoterm',
+  'provisionalRevenue','billedRevenue','unbilledRevenue',
+  'provisionalCost','postedCost','unpostedCost','actualProfit',
+  'operationLock','financialLock','jobStatus','isOpen'
+];
+const CA_COLLECTIONS = ['ca_ops_export', 'ca_ops_import'];
+
+// Primary: GET /api/mongo-batch (cached, compact). Fallback: page through /api/mongo find.
 async function fetchCanadaData(force) {
-  const resp = await fetch(CANADA_API + '?t=' + Date.now() + (force ? '&forceRefresh=1' : ''),
-    { method:'GET', headers:{ 'Cache-Control':'no-cache, no-store' } });
-  const data = await resp.json().catch(() => ({ error: 'Canada API returned ' + resp.status }));
-  if (!resp.ok || data.error) throw new Error(data.error || ('Canada API returned ' + resp.status));
-  return data;
+  try {
+    const resp = await fetch(CANADA_API + '?t=' + Date.now() + (force ? '&forceRefresh=1' : ''),
+      { method:'GET', headers:{ 'Cache-Control':'no-cache, no-store' } });
+    const data = await resp.json().catch(() => ({ error: 'Canada API returned ' + resp.status }));
+    if (resp.ok && !data.error && Array.isArray(data.rows)) return data;
+    console.warn('[fetchCanadaData] mongo-batch not usable (' + resp.status + ': ' + (data.error || 'bad shape') + ') — falling back to /api/mongo');
+  } catch (e) {
+    console.warn('[fetchCanadaData] mongo-batch failed — falling back to /api/mongo:', e);
+  }
+  return fetchCanadaDataViaMongo();
+}
+
+async function fetchCanadaDataViaMongo() {
+  const PAGE = 500, docs = [];
+  for (const collection of CA_COLLECTIONS) {
+    for (let skip = 0; ; skip += PAGE) {
+      const r = await fetch(MONGO_API, { method:'POST', headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify({ action:'find', collection, filter:{}, limit: PAGE, skip }) });
+      const d = await r.json().catch(() => ({ error: 'HTTP ' + r.status }));
+      if (!r.ok || d.error) throw new Error('/api/mongo find ' + collection + ': ' + (d.error || r.status));
+      const page = d.documents || [];
+      docs.push(...page);
+      if (page.length < PAGE) break;
+    }
+  }
+  const ymd = v => (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}/.test(v)) ? v.slice(0, 10) : (v || '');
+  const DATE_KEYS = new Set(['jobDate','periodDate','etd','eta','operationLock','financialLock']);
+  const rows = docs.map(d => CA_FIELDS.map(f => {
+    const v = d[f];
+    if (v === undefined || v === null) return '';
+    return DATE_KEYS.has(f) ? ymd(v) : v;
+  }));
+  const syncedAt = docs.reduce((m, d) => (d.syncedAt && d.syncedAt > m ? d.syncedAt : m), '');
+  console.log('[fetchCanadaDataViaMongo] loaded', rows.length, 'jobs');
+  return { fields: CA_FIELDS, rows, meta: { jobs: rows.length, generatedAt: syncedAt, via: 'mongo' } };
 }
 async function fetchCanadaUsers() {
   try {
@@ -5797,7 +5839,8 @@ function closeDrillBtn() {
 async function loadData() {
   document.getElementById('loadingOverlay').style.display = 'flex';
   try {
-    const [data, users] = await Promise.all([ fetchCanadaData(false), fetchCanadaUsers() ]);
+    const data  = await fetchCanadaData(false);
+    const users = (data.users && data.users.length) ? data.users : await fetchCanadaUsers();
     caMeta     = data.meta || {};
     rawSRR     = caExpand(data);
     rawJPA     = [];
