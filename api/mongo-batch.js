@@ -16,7 +16,8 @@ const TTL_MS = 15 * 60 * 1000;                       // 15 min (Refresh button b
 
 // Empty cells are dropped from each record to keep the response well under Vercel's 4.5 MB limit.
 // These keys are always kept because the dashboard checks for their presence.
-const ALWAYS_KEEP = new Set(['shipmentId', 'direction', 'lob', 'jobDate', 'periodDate', 'isOpen', 'jobStatus', 'jobOwner']);
+const ALWAYS_KEEP = new Set(['shipmentId', 'direction', 'lob', 'jobDate', 'periodDate', 'isOpen', 'jobStatus', 'jobOwner',
+                             'unbilledRevenue', 'unpostedCost']);
 function compact(doc) {
   const out = {};
   for (const [k, v] of Object.entries(doc)) {
@@ -36,6 +37,43 @@ async function getClient() {
   return mongoClient;
 }
 
+// Unbilled Revenue / Unposted Cost come from the charge-level estimatedvsactual collection:
+// per job (jobNo = shipmentId) the charge lines' unbilledRevenue / unbilledCost are summed.
+// The JPA values are kept as jpaUnbilledRevenue / jpaUnpostedCost for reference.
+// If estimatedvsactual is empty (not pushed yet) the JPA values are left in place.
+const EVA_COLLECTION = 'estimatedvsactual';
+const toNum = v => { const n = typeof v === 'number' ? v : parseFloat(String(v ?? '').replace(/[,\s]/g, '')); return isNaN(n) ? 0 : n; };
+const round2 = n => Math.round(n * 100) / 100;
+
+function sumEvaByJob(evaRows) {
+  const byJob = new Map();
+  for (const e of evaRows) {
+    const job = String(e.jobNo ?? '').trim();
+    if (!job) continue;
+    const t = byJob.get(job) || { unbilledRevenue: 0, unbilledCost: 0, lines: 0 };
+    t.unbilledRevenue += toNum(e.unbilledRevenue);
+    t.unbilledCost    += toNum(e.unbilledCost);
+    t.lines++;
+    byJob.set(job, t);
+  }
+  return byJob;
+}
+
+function applyEvaAmounts(records, byJob) {
+  if (!byJob.size) return { source: 'jpa', matched: 0 };
+  let matched = 0;
+  for (const r of records) {
+    const t = byJob.get(String(r.shipmentId ?? '').trim());
+    r.jpaUnbilledRevenue = r.unbilledRevenue;
+    r.jpaUnpostedCost    = r.unpostedCost;
+    r.unbilledRevenue    = t ? round2(t.unbilledRevenue) : 0;
+    r.unpostedCost       = t ? round2(t.unbilledCost)    : 0;
+    r.evaChargeLines     = t ? t.lines : 0;
+    if (t) matched++;
+  }
+  return { source: EVA_COLLECTION, matched };
+}
+
 let cache = { payload: null, builtAt: null };
 
 async function buildCache(db) {
@@ -43,9 +81,17 @@ async function buildCache(db) {
   const expDocs  = await db.collection(COLS.Export).find({}).toArray();
   const impDocs  = await db.collection(COLS.Import).find({}).toArray();
   const userDocs = await db.collection('users').find({}).toArray();
-  const records  = [...expDocs, ...impDocs].map(compact);
-  console.log(`[CA-OPS] Export: ${expDocs.length}, Import: ${impDocs.length}, users: ${userDocs.length}`);
-  cache = { payload: { records, users: userDocs }, builtAt: new Date().toISOString() };
+  const evaRows  = await db.collection(EVA_COLLECTION)
+    .find({}, { projection: { _id: 0, jobNo: 1, unbilledRevenue: 1, unbilledCost: 1 } }).toArray();
+  const all      = [...expDocs, ...impDocs];
+  const amounts  = applyEvaAmounts(all, sumEvaByJob(evaRows));
+  const records  = all.map(compact);
+  console.log(`[CA-OPS] Export: ${expDocs.length}, Import: ${impDocs.length}, users: ${userDocs.length}, ` +
+    `amounts from ${amounts.source} (${evaRows.length} charge lines, ${amounts.matched} jobs matched)`);
+  cache = {
+    payload: { records, users: userDocs, amountsSource: amounts.source, evaJobsMatched: amounts.matched },
+    builtAt: new Date().toISOString()
+  };
   return cache;
 }
 
