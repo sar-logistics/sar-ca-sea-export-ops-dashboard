@@ -2011,6 +2011,16 @@ function caIsOpen(r) {
   if (r.isOpen !== undefined) return !!r.isOpen;
   return !r.operationLockDate || String(r.operationLockDate).trim() === '';
 }
+// Checkpoint log: SOB = vessel sailing date (ETD), falling back to the period date
+function caDaysSinceSob(r) {
+  const raw = r.etd || r.etdLoadingPort || r.periodDate || r.jobDate;
+  const d = raw ? new Date(raw) : null;
+  if (!d || isNaN(d)) return null;
+  const today = new Date(); today.setHours(0,0,0,0);
+  return Math.floor((today - new Date(d.getFullYear(), d.getMonth(), d.getDate())) / 864e5);
+}
+function caRevNotBilled(r)  { const n = caDaysSinceSob(r); return nzAmt(r.unbilledRevenue) && n !== null && n > 3; }
+function caCostNotPosted(r) { const n = caDaysSinceSob(r); return nzAmt(r.unpostedCost)    && n !== null && n > 7; }
 function caSetAmountKpi(s, recs, key, title, label) {
   const total = recs.reduce((a, r) => a + (Number(r[key]) || 0), 0);
   const el = document.getElementById('kv-' + s + '-amt');
@@ -6714,9 +6724,11 @@ async function confirmDeleteUser(email) {
 // ── SUMMARY PAGE ─────────────────────────────────────────────
 
 const SUMMARY_REPORTS = [
-  { id:'open-jobs',          title:'Open Jobs',            color:'#dc2626', okColor:'#16a34a', flag: r => caIsOpen(r) },
-  { id:'revenue-not-billed', title:'Unbilled Revenue',     color:'#dc2626', okColor:'#16a34a', flag: r => nzAmt(r.unbilledRevenue) },
-  { id:'cost-not-posted',    title:'Unposted Cost',        color:'#dc2626', okColor:'#16a34a', flag: r => nzAmt(r.unpostedCost) },
+  { id:'open-jobs',          title:'Open Jobs',                               color:'#dc2626', okColor:'#16a34a', flag: r => caIsOpen(r) },
+  { id:'revenue-not-billed', title:'Revenue Not Billed within 3 Days of SOB', color:'#dc2626', okColor:'#16a34a', flag: r => caRevNotBilled(r) },
+  { id:'cost-not-posted',    title:'Cost Not Posted within 7 Days of SOB',    color:'#dc2626', okColor:'#16a34a', flag: r => caCostNotPosted(r) },
+  // Same as USA: margin % formula not agreed yet, so it never flags rather than show a misleading number
+  { id:'job-profit',         title:'Job Profit < 3%',                         color:'#dc2626', okColor:'#16a34a', flag: r => false },
 ];
 
 // ── PERFORMANCE METRICS ──────────────────────────────────────
@@ -7245,8 +7257,8 @@ function renderSummary() {
   const wipCostFlagged = {};  // shipmentId -> true if any WIP line has accrual !== 0
   const wipCostAmount  = {};  // shipmentId -> sum of |accrual| $ across its lines
   filtered.forEach(r => {
-    if (nzAmt(r.unbilledRevenue)) { wipRevFlagged[r.shipmentId] = true;  wipRevAmount[r.shipmentId]  = Number(r.unbilledRevenue) || 0; }
-    if (nzAmt(r.unpostedCost))    { wipCostFlagged[r.shipmentId] = true; wipCostAmount[r.shipmentId] = Number(r.unpostedCost) || 0; }
+    if (caRevNotBilled(r))  { wipRevFlagged[r.shipmentId] = true;  wipRevAmount[r.shipmentId]  = Number(r.unbilledRevenue) || 0; }
+    if (caCostNotPosted(r)) { wipCostFlagged[r.shipmentId] = true; wipCostAmount[r.shipmentId] = Number(r.unpostedCost) || 0; }
   });
 
   // ── Compute per-report stats ──────────────────────────────────────────────
