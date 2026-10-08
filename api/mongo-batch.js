@@ -4,11 +4,14 @@ import { MongoClient } from 'mongodb';
 //   GET                                                     → { records, users, builtAt }
 //   POST (x-batch-secret) { action:'wipe', direction }      → clears ca_ops_export / ca_ops_import
 //   POST (x-batch-secret) { action:'push', direction, records } → inserts a chunk (CanadaOpsPush.gs)
+//   POST (x-batch-secret) { action:'wipe'|'push', collection:'estimatedvsactual', records }
+//        → charge-level ETD/ETA tab (CanadaEstVsActPush.gs); only whitelisted collections allowed
 
 const uri    = process.env.MONGO_URI;
 const SECRET = process.env.BATCH_SECRET;
 const DB     = process.env.MONGO_DB || undefined;   // undefined → database in the URI (sar-ca-ops)
 const COLS   = { Export: 'ca_ops_export', Import: 'ca_ops_import' };
+const EXTRA_COLLECTIONS = new Set(['estimatedvsactual']);   // writable by name via POST
 const TTL_MS = 15 * 60 * 1000;                       // 15 min (Refresh button bypasses it)
 
 // Empty cells are dropped from each record to keep the response well under Vercel's 4.5 MB limit.
@@ -56,22 +59,24 @@ export default async function handler(req, res) {
     const secret = req.headers['x-batch-secret'];
     if (!SECRET || secret !== SECRET) return res.status(401).json({ error: 'Unauthorized' });
 
-    const { action, records, direction } = req.body || {};
-    const colName = COLS[direction];
-    if (!colName) return res.status(400).json({ error: 'Invalid direction' });
+    const { action, records, direction, collection } = req.body || {};
+    const colName = collection
+      ? (EXTRA_COLLECTIONS.has(collection) ? collection : null)
+      : COLS[direction];
+    if (!colName) return res.status(400).json({ error: collection ? 'Collection not allowed: ' + collection : 'Invalid direction' });
 
     try {
       const db = (await getClient()).db(DB);
       if (action === 'wipe') {
         const result = await db.collection(colName).deleteMany({});
         cache = { payload: null, builtAt: null };
-        return res.status(200).json({ deleted: result.deletedCount, direction });
+        return res.status(200).json({ deleted: result.deletedCount, collection: colName });
       }
       if (action === 'push') {
         if (!records || !records.length) return res.status(400).json({ error: 'No records' });
         const result = await db.collection(colName).insertMany(records, { ordered: false });
         cache = { payload: null, builtAt: null };
-        return res.status(200).json({ inserted: result.insertedCount, direction });
+        return res.status(200).json({ inserted: result.insertedCount, collection: colName });
       }
       return res.status(400).json({ error: 'Unknown action' });
     } catch (e) {
