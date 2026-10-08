@@ -2884,12 +2884,14 @@ function showSigninError(msg) {
 function signOut() {
   google.accounts.id.disableAutoSelect();
   currentUser = null; currentRole = null; allSRR = [];
-  document.getElementById('appShell').style.display = 'none';
-  document.getElementById('signInPage').style.display = 'flex';
-  document.getElementById('signinLoading').style.display = 'none';
-  document.getElementById('signinError').style.display = 'none';
-  document.getElementById('signinBtn').style.display = 'flex';
-  document.getElementById('googleBtnContainer').innerHTML =
+  const _show = (id, v) => { const el = document.getElementById(id); if (el) el.style.display = v; };
+  _show('appShell', 'none');
+  _show('signInPage', 'flex');
+  _show('signinLoading', 'none');
+  _show('signinError', 'none');
+  _show('signinBtn', 'flex');   // may not exist once Google has rendered its own button
+  const _gbc = document.getElementById('googleBtnContainer');
+  if (_gbc) _gbc.innerHTML =
     `<button class="signin-btn" id="signinBtn" onclick="handleAuth()">
       <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width:18px;height:18px">
         <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
