@@ -1990,6 +1990,22 @@ const WIP_API   = '/api/wip';
 // ── CANADA: amount helpers ─────────────────────────────
 // Records come from /api/mongo-batch exactly as CanadaOpsPush.gs stores them
 // (all JPA columns in camelCase + periodDate, jobStatus, isOpen, branch ...).
+// Accepts either response shape from /api/mongo-batch:
+//   { records:[...] }            (current mongo-batch.js)
+//   { fields:[...], rows:[[...]] } (earlier compact mongo-batch.js)
+function caRecords(data) {
+  if (!data) return [];
+  if (Array.isArray(data.records)) return data.records;
+  if (Array.isArray(data.fields) && Array.isArray(data.rows)) {
+    return data.rows.map(a => {
+      const r = {}; data.fields.forEach((f, i) => { r[f] = a[i]; });
+      if (!r.lob && r.direction) r.lob = 'SEA ' + String(r.direction).toUpperCase();
+      if (r.location === undefined && r.branch) r.location = r.branch;
+      return r;
+    });
+  }
+  return [];
+}
 function nzAmt(v) { return Math.abs(Number(v) || 0) > 0.005; }
 function caIsOpen(r) {
   if (r.isOpen !== undefined) return !!r.isOpen;
@@ -4817,7 +4833,7 @@ async function refreshData(pageId) {
   try {
     const resp = await fetch(BATCH_API + '?t=' + Date.now() + '&forceRefresh=1', { method:'GET', headers:{'Cache-Control':'no-cache, no-store'} });
     const data = await resp.json();
-    rawSRR    = data.records    || [];
+    rawSRR    = caRecords(data);
     updateRateLabel();
     rawJPA    = [];
     allUsers  = data.users      || [];
@@ -5703,7 +5719,7 @@ async function loadData() {
           const s2 = r2.headers.get('X-Cache');
           if (s2 === 'HIT') {
             // Full cache ready — update data, re-render only the currently visible page
-            rawSRR = d2.records || []; rawJPA = [];
+            rawSRR = caRecords(d2); rawJPA = [];
             allSRR = rawSRR.filter(r => (r.direction||'').toLowerCase() === currentDirection.toLowerCase() && matchesCurrentLob(r)); allJPA = [...rawJPA];
             applyRLS();
             try { renderPage(getActivePage()); } catch(e) {}
@@ -5721,7 +5737,7 @@ async function loadData() {
               });
               if (!r3.ok) return;
               const d3 = await r3.json();
-              rawSRR = d3.records || []; rawJPA = [];
+              rawSRR = caRecords(d3); rawJPA = [];
               allSRR = rawSRR.filter(r => (r.direction||'').toLowerCase() === currentDirection.toLowerCase() && matchesCurrentLob(r)); allJPA = [...rawJPA];
               applyRLS();
               try { renderPage(getActivePage()); } catch(e) {}
@@ -5733,7 +5749,8 @@ async function loadData() {
         } catch(e) { console.error('[loadData] Silent re-fetch error:', e); }
       }, 45000);
     }
-    rawSRR     = data.records    || [];
+    rawSRR     = caRecords(data);
+    if (!rawSRR.length) console.warn('[loadData] 0 Canada records from /api/mongo-batch — response keys:', Object.keys(data || {}).join(', '), data && data.error ? '| error: ' + data.error : '');
     rawJPA     = [];
     allUsers   = data.users      || [];
     // Filter by current direction
