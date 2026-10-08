@@ -1,27 +1,28 @@
 import { MongoClient } from 'mongodb';
 
-// Canada Sea Ops — dashboard data route (same role as the Thailand mongo-batch.js)
-//   GET                                                   → { fields, rows, meta, users, builtAt }
-//   POST (x-batch-secret) { action:'wipe', direction }    → clears ca_ops_export / ca_ops_import
-//   POST (x-batch-secret) { action:'push', direction, records } → inserts a chunk (optional path;
-//        the daily Apps Script push uses /api/mongo bulkWrite instead)
+// Canada Sea Ops — dashboard data route (same contract as the USA / Thailand mongo-batch.js)
+//   GET                                                     → { records, users, builtAt }
+//   POST (x-batch-secret) { action:'wipe', direction }      → clears ca_ops_export / ca_ops_import
+//   POST (x-batch-secret) { action:'push', direction, records } → inserts a chunk (CanadaOpsPush.gs)
 
 const uri    = process.env.MONGO_URI;
 const SECRET = process.env.BATCH_SECRET;
-const DB     = process.env.MONGO_DB || undefined;   // undefined → database in the URI (sar-id-ops)
+const DB     = process.env.MONGO_DB || undefined;   // undefined → database in the URI (sar-ca-ops)
 const COLS   = { Export: 'ca_ops_export', Import: 'ca_ops_import' };
 const TTL_MS = 15 * 60 * 1000;                       // 15 min (Refresh button bypasses it)
 
-// Field order sent to the browser — must match caExpand() in index.html
-const FIELDS = [
-  'shipmentId', 'direction', 'jobDate', 'periodDate', 'etd', 'eta',
-  'branch', 'zone', 'tradeLane', 'jobOwner', 'salesPerson', 'customer',
-  'carrierName', 'vessel', 'origin', 'destination', 'mblNumber', 'houseRef', 'consolId',
-  'cargoType', 'containerTeu', 'consigneeName', 'consignorName', 'incoterm',
-  'provisionalRevenue', 'billedRevenue', 'unbilledRevenue',
-  'provisionalCost', 'postedCost', 'unpostedCost', 'actualProfit',
-  'operationLock', 'financialLock', 'jobStatus', 'isOpen'
-];
+// Empty cells are dropped from each record to keep the response well under Vercel's 4.5 MB limit.
+// These keys are always kept because the dashboard checks for their presence.
+const ALWAYS_KEEP = new Set(['shipmentId', 'direction', 'lob', 'jobDate', 'periodDate', 'isOpen', 'jobStatus', 'jobOwner']);
+function compact(doc) {
+  const out = {};
+  for (const [k, v] of Object.entries(doc)) {
+    if (k === '_id') continue;
+    if (!ALWAYS_KEEP.has(k) && (v === '' || v === null || v === undefined)) continue;
+    out[k] = v;
+  }
+  return out;
+}
 
 let mongoClient;
 async function getClient() {
@@ -36,23 +37,12 @@ let cache = { payload: null, builtAt: null };
 
 async function buildCache(db) {
   console.log('[CA-OPS] Building cache...');
-  const proj     = { projection: { _id: 0 } };
-  const expDocs  = await db.collection(COLS.Export).find({}, proj).toArray();
-  const impDocs  = await db.collection(COLS.Import).find({}, proj).toArray();
+  const expDocs  = await db.collection(COLS.Export).find({}).toArray();
+  const impDocs  = await db.collection(COLS.Import).find({}).toArray();
   const userDocs = await db.collection('users').find({}).toArray();
-  const all      = [...expDocs, ...impDocs];
-  // Compact rows (no repeated keys) keep the response well under Vercel's 4.5 MB limit
-  const rows     = all.map(d => FIELDS.map(f => (d[f] === undefined ? '' : d[f])));
-  const syncedAt = all.reduce((m, d) => (d.syncedAt && d.syncedAt > m ? d.syncedAt : m), '');
+  const records  = [...expDocs, ...impDocs].map(compact);
   console.log(`[CA-OPS] Export: ${expDocs.length}, Import: ${impDocs.length}, users: ${userDocs.length}`);
-  cache = {
-    payload: {
-      fields: FIELDS, rows,
-      meta: { jobs: rows.length, export: expDocs.length, import: impDocs.length, generatedAt: syncedAt },
-      users: userDocs
-    },
-    builtAt: new Date().toISOString()
-  };
+  cache = { payload: { records, users: userDocs }, builtAt: new Date().toISOString() };
   return cache;
 }
 
