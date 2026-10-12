@@ -1663,9 +1663,9 @@ tr:hover td:first-child,tr:hover td.col-grand{background:#f8fbff}
             <div class="kpi-sub" id="kv-uc-period">All jobs in period</div>
           </div>
           <div class="kpi orange">
-            <div class="kpi-top"><span class="kpi-dot orange"></span><span class="kpi-lbl">Cost Not Posted within 7 Days of SOB</span></div>
+            <div class="kpi-top"><span class="kpi-dot orange"></span><span class="kpi-lbl">Unposted Cost Jobs</span></div>
             <div class="kpi-val orange" id="kv-uc-flagged">—</div>
-            <div class="kpi-sub">Unposted ≠ 0 and SOB &gt; 7 days ago</div>
+            <div class="kpi-sub">Unposted Cost ≠ 0</div>
           </div>
           <div class="kpi red">
             <div class="kpi-top"><i class="kpi-icon-sm ti ti-percentage red"></i><span class="kpi-lbl">% of such jobs</span></div>
@@ -4463,8 +4463,8 @@ function renderUnpostedCost() {
   const filtered   = filterByDate(caEvaJobsPool(), pageId);
   populateFilters(pageId, filtered);
   const filteredDD = applyAdditionalFilters(applyDropdownFilters(filtered, pageId), pageId);
-  // Any charge line with Unbilled Cost ≠ 0, and ETD/ETA (SOB) more than 7 days ago
-  const flaggedDD  = filteredDD.filter(r => (Number(r.evaUnbilledCostLines) || 0) > 0 && (caEvaSobDays(r) ?? -1) > 7);
+  // Any charge line with Unbilled Cost ≠ 0, no other condition
+  const flaggedDD  = filteredDD.filter(r => (Number(r.evaUnbilledCostLines) || 0) > 0);
   _renderJPAFlaggedReport(pageId, 'uc', 'Cost Not Posted within 7 Days of SOB', label, view, cols, filteredDD, flaggedDD);
 }
 
