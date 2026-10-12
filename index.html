@@ -111,6 +111,9 @@ body{font-family:var(--font);background:var(--bg);color:var(--text1);font-size:1
 .tb-ud-role{font-size:10.5px;color:var(--accent);margin-top:2px;font-weight:500;letter-spacing:.03em;text-transform:uppercase}
 .tb-ud-divider{height:1px;background:var(--border)}
 .tb-ud-item{display:flex;align-items:center;gap:10px;padding:12px 16px;font-size:12.5px;color:var(--text2)}
+.ca-cur-btn{flex:1;border:0;background:transparent;color:var(--text2);font:inherit;font-size:12px;font-weight:600;padding:6px 0;border-radius:7px;cursor:pointer;transition:background .15s,color .15s}
+.ca-cur-btn:hover{background:#E5EDF7}
+.ca-cur-btn.active{background:#1F3A6E;color:#fff}
 .tb-ud-btn{width:100%;text-align:left;background:none;border:none;cursor:pointer;transition:background .15s,padding-left .15s;color:var(--text2);font-family:inherit;font-size:12.5px}
 .tb-ud-btn:hover{background:var(--accent-bg);color:var(--text1);padding-left:19px}
 .tb-ud-btn i{font-size:15px;width:18px;text-align:center;flex-shrink:0;color:var(--accent)}
@@ -1118,6 +1121,16 @@ tr:hover td:first-child,tr:hover td.col-grand{background:#f8fbff}
         <div class="tb-ud-item" style="flex-direction:column;align-items:flex-start;gap:2px">
           <div class="tb-live-inner"><span class="tb-live-dot"></span>Live Data Connected</div>
           <div id="tb-last-updated" style="font-size:10px;color:var(--text3);padding-left:15px">—</div>
+        </div>
+        <div class="tb-ud-divider"></div>
+        <!-- Currency converter -->
+        <div class="tb-ud-item" style="flex-direction:column;align-items:stretch;gap:8px" onclick="event.stopPropagation()">
+          <div style="display:flex;align-items:center;gap:8px"><i class="ti ti-currency-dollar"></i>Currency</div>
+          <div class="ca-cur-toggle" style="display:flex;background:#F1F5F9;border:1px solid var(--border);border-radius:9px;padding:3px;gap:3px">
+            <button type="button" id="cur-cad" onclick="caSetCurrency('CAD')" class="ca-cur-btn">CAD</button>
+            <button type="button" id="cur-usd" onclick="caSetCurrency('USD')" class="ca-cur-btn">USD</button>
+          </div>
+          <div id="cur-rate-note" style="font-size:10.5px;color:var(--text3)">1 USD = 1.40 CAD</div>
         </div>
         <div class="tb-ud-divider"></div>
         <button class="tb-ud-item tb-ud-btn" id="feedbackBtn" onclick="openFeedback();toggleUserMenu()">
@@ -5373,12 +5386,33 @@ let dvActiveLob   = 'ALL';
 
 const DV_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
-let currentCurrency = 'CAD'; // Canada: single currency, no conversion
+// Canada data is stored in CAD. The menu's currency switch shows amounts in CAD or USD.
+const CAD_PER_USD = 1.4;   // 1 USD = 1.4 CAD
+let currentCurrency = (() => { try { return localStorage.getItem('caCurrency') === 'USD' ? 'USD' : 'CAD'; } catch(e) { return 'CAD'; } })();
 let manualRate = 17500; // manual USD rate set by admin
 
-function getExchangeRate() { return 1; }
+function getExchangeRate() { return currentCurrency === 'USD' ? CAD_PER_USD : 1; }   // fmtIndian divides by this
 
-function getCurrencySymbol() { return 'C$'; }
+function getCurrencySymbol() { return currentCurrency === 'USD' ? 'US$' : 'C$'; }
+
+function caUpdateCurrencyButtons() {
+  ['CAD', 'USD'].forEach(c => { const b = document.getElementById('cur-' + c.toLowerCase()); if (b) b.classList.toggle('active', currentCurrency === c); });
+}
+function caSetCurrency(cur) {
+  currentCurrency = cur === 'USD' ? 'USD' : 'CAD';
+  try { localStorage.setItem('caCurrency', currentCurrency); } catch(e) {}
+  caUpdateCurrencyButtons();
+  // Re-render the current page, keeping expanded rows open
+  const openKeys = new Set();
+  document.querySelectorAll('.rc.open').forEach(rc => { if (rc.id) openKeys.add(rc.id); });
+  const a = document.querySelector('.page.active');
+  try { renderPage(a ? a.id.replace('page-', '') : 'summary'); } catch(e) { console.warn('[currency] re-render failed', e); }
+  requestAnimationFrame(() => openKeys.forEach(id => { const rc = document.getElementById(id); if (rc && !rc.classList.contains('open')) rc.click(); }));
+  // Refresh an open drill-down
+  const dp = document.getElementById('detailPanel');
+  if (dp && dp.style.display === 'flex' && typeof applyDvAll === 'function') applyDvAll();
+}
+document.addEventListener('DOMContentLoaded', caUpdateCurrencyButtons);
 
 function updateRateLabel() {
   const el = document.getElementById('cur-rate-label');
@@ -5431,7 +5465,7 @@ function formatDvCell(r, c) {
     }
     if (c.full) {
       // Show full number with commas — no abbreviation
-      const formatted = n.toLocaleString('en-IN', { maximumFractionDigits: 2 });
+      const formatted = (n / getExchangeRate()).toLocaleString('en-IN', { maximumFractionDigits: 2 });   // CAD → USD when selected
       return `<span style="color:${color};font-weight:500">${formatted}</span>`;
     }
     return `<span style="color:${color};font-weight:500">${fmtIndian(n)}</span>`;
