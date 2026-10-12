@@ -6801,8 +6801,6 @@ const SUMMARY_REPORTS = [
   { id:'open-jobs',          title:'Open Jobs',                               color:'#dc2626', okColor:'#16a34a', flag: r => caIsOpen(r) },
   { id:'revenue-not-billed', title:'Revenue Not Billed within 3 Days of SOB', color:'#dc2626', okColor:'#16a34a', flag: r => caRevNotBilled(r) },
   { id:'cost-not-posted',    title:'Cost Not Posted within 7 Days of SOB',    color:'#dc2626', okColor:'#16a34a', flag: r => caCostNotPosted(r) },
-  // Same as USA: margin % formula not agreed yet, so it never flags rather than show a misleading number
-  { id:'job-profit',         title:'Job Profit < 3%',                         color:'#dc2626', okColor:'#16a34a', flag: r => false },
 ];
 
 // ── PERFORMANCE METRICS ──────────────────────────────────────
