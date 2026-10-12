@@ -56,11 +56,13 @@ function sumEvaByJob(evaRows) {
     if (!t) {
       t = { unbilledRevenue: 0, unbilledCost: 0, lines: 0, revLines: 0, costLines: 0,
             lob2: e.lob2 || '', direction: e.direction || evaDirection(e.lob2 || e.lob),
-            etdEta: e.etdEta || '', ataAtd: e.ataAtd || '', jobDate: e.jobDate || '', location: e.location || '',
+            etdEtaNew: e.etdEtaNew || '', etdEta: e.etdEta || '', ataAtd: e.ataAtd || '', jobDate: e.jobDate || '',
+            location: e.location || '', jobOwner: e.jobOwner || '', operationLockDate: e.operationLockDate || '',
             organization: e.organization || '', salesPerson: e.salesPerson || '', sourceYear: e.sourceYear || '' };
       byJob.set(job, t);
     }
-    const rev = toNum(e.unbilledRevenue), cost = toNum(e.unbilledCost);
+    // USA naming first (unpostedCost), Canada sheet naming as fallback (unbilledCost)
+    const rev = toNum(e.unbilledRevenue), cost = toNum(e.unpostedCost !== undefined && e.unpostedCost !== '' ? e.unpostedCost : e.unbilledCost);
     t.unbilledRevenue += rev;
     t.unbilledCost    += cost;
     t.lines++;
@@ -111,8 +113,10 @@ function evaJobSummaries(byJob) {
     if (!t.direction) continue;
     out.push({
       shipmentId: job, direction: t.direction, lob: t.lob2 || ('SEA ' + t.direction.toUpperCase()),
-      jobDate: t.jobDate, periodDate: t.etdEta || t.jobDate, etdEta: t.etdEta, ataAtd: t.ataAtd,
-      branch: t.location, location: t.location, jobOwner: t.salesPerson, salesPerson: t.salesPerson,
+      // Same as USA: period = ETD/ETA New (3-step fallback column), else ETD/ETA, else Job Date
+      jobDate: t.jobDate, periodDate: t.etdEtaNew || t.etdEta || t.jobDate, etdEtaNew: t.etdEtaNew, etdEta: t.etdEta, ataAtd: t.ataAtd,
+      branch: t.location || '(No Branch)', location: t.location, jobOwner: t.jobOwner || t.salesPerson, salesPerson: t.salesPerson,
+      operationLockDate: t.operationLockDate,
       organization: t.organization, sourceYear: t.sourceYear,
       unbilledRevenue: round2(t.unbilledRevenue), unpostedCost: round2(t.unbilledCost),
       evaChargeLines: t.lines, evaUnbilledRevLines: t.revLines, evaUnbilledCostLines: t.costLines, evaJob: true
@@ -129,8 +133,9 @@ async function buildCache(db) {
   const impDocs  = await db.collection(COLS.Import).find({}).toArray();
   const userDocs = await db.collection('users').find({}).toArray();
   const evaRows  = await db.collection(EVA_COLLECTION)
-    .find({}, { projection: { _id: 0, jobNo: 1, unbilledRevenue: 1, unbilledCost: 1, lob: 1, lob2: 1, direction: 1,
-                               etdEta: 1, jobDate: 1, location: 1, organization: 1, salesPerson: 1, sourceYear: 1 } }).toArray();
+    .find({}, { projection: { _id: 0, jobNo: 1, unbilledRevenue: 1, unbilledCost: 1, unpostedCost: 1, lob: 1, lob2: 1, direction: 1,
+                               etdEtaNew: 1, etdEta: 1, ataAtd: 1, jobDate: 1, location: 1, jobOwner: 1, operationLockDate: 1,
+                               organization: 1, salesPerson: 1, sourceYear: 1 } }).toArray();
   const all      = [...expDocs, ...impDocs];
   const evaByJob = sumEvaByJob(evaRows);
   const evaJobs  = evaJobSummaries(evaByJob);
