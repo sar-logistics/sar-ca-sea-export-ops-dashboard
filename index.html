@@ -2021,6 +2021,90 @@ function caDaysSinceSob(r) {
 }
 function caRevNotBilled(r)  { const n = caDaysSinceSob(r); return nzAmt(r.unbilledRevenue) && n !== null && n > 3; }
 function caCostNotPosted(r) { const n = caDaysSinceSob(r); return nzAmt(r.unpostedCost)    && n !== null && n > 7; }
+// ── CANADA: charge-level drill-down from MongoDB "estimatedvsactual" ─────────
+// On the Unbilled Revenue / Unposted Cost pages, clicking any number shows the
+// charge lines behind it (one row per charge) instead of one row per job.
+const EVA_COLLECTION = 'estimatedvsactual';
+const DV_COLS_EVA = [
+  { key:'jobNo',                 label:'Job No.'                         },
+  { key:'charge',                label:'Charge'                          },
+  { key:'unbilledRevenue',       label:'Unbilled Revenue',   num:true    },
+  { key:'unbilledCost',          label:'Unbilled Cost',      num:true    },
+  { key:'estimatedRevenue',      label:'Estimated Revenue',  num:true    },
+  { key:'bookedRevenue',         label:'Booked Revenue',     num:true    },
+  { key:'actualRevenue',         label:'Actual Revenue',     num:true    },
+  { key:'estimatedCost',         label:'Estimated Cost',     num:true    },
+  { key:'bookedCost',            label:'Booked Cost',        num:true    },
+  { key:'actualCost',            label:'Actual Cost',        num:true    },
+  { key:'estimatedProfit',       label:'Estimated Profit',   num:true    },
+  { key:'estimatedProfitMargin', label:'Est. Margin %',      pct:true    },
+  { key:'actualProfit',          label:'Actual Profit',      num:true    },
+  { key:'actualProfitMargin',    label:'Actual Margin %',    pct:true    },
+  { key:'jobDate',               label:'Job Date',           date:true   },
+  { key:'etdEta',                label:'ETD / ETA',          date:true   },
+  { key:'ataAtd',                label:'ATA / ATD',          date:true   },
+  { key:'financialLockDate',     label:'Financial Lock',     date:true   },
+  { key:'jobStatus',             label:'Job Status'                      },
+  { key:'jobOwner',              label:'Job Owner'                       },
+  { key:'customer',              label:'Customer'                        },
+  { key:'organization',          label:'Organization'                    },
+  { key:'salesPerson',           label:'Sales Person'                    },
+  { key:'location',              label:'Location'                        },
+  { key:'lob2',                  label:'LOB'                             },
+  { key:'sourceYear',            label:'Source'                          },
+];
+
+function caEvaKindForActivePage() {
+  const a = document.querySelector('.page.active');
+  const id = a ? a.id.replace('page-', '') : '';
+  if (id === 'unbilled-rev')  return 'rev';
+  if (id === 'unposted-cost') return 'cost';
+  return null;
+}
+
+async function caOpenEvaDrill(jobRecs, title, sub, kind) {
+  const ids = [...new Set((jobRecs || []).map(r => String(r.shipmentId || '').trim()).filter(Boolean))];
+  // Show the panel straight away with a loading note
+  openDrill([], title, 'Loading charge lines…', DV_COLS_EVA, true);
+  if (!ids.length) { document.getElementById('dvSub').textContent = sub || ''; return; }
+
+  const amountKey = kind === 'cost' ? 'unbilledCost' : 'unbilledRevenue';
+  const filter = { jobNo: { $in: ids }, [amountKey]: { $nin: [0, '', null] } };
+  const PAGE = 1000, rows = [];
+  try {
+    for (let skip = 0; ; skip += PAGE) {
+      const resp = await fetch(MONGO_API, { method:'POST', headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify({ action:'find', collection: EVA_COLLECTION, filter, limit: PAGE, skip }) });
+      const d = await resp.json().catch(() => ({ error: 'HTTP ' + resp.status }));
+      if (!resp.ok || d.error) throw new Error(d.error || ('HTTP ' + resp.status));
+      const page = d.documents || [];
+      rows.push(...page);
+      if (page.length < PAGE) break;
+    }
+  } catch (e) {
+    console.error('[EVA drill]', e);
+    document.getElementById('dvSub').textContent = 'Could not load charge lines: ' + e.message;
+    return;
+  }
+
+  // Add job-level context (owner, customer, status) from the dashboard records
+  const byJob = {};
+  jobRecs.forEach(r => { byJob[String(r.shipmentId || '').trim()] = r; });
+  rows.forEach(c => {
+    const j = byJob[String(c.jobNo || '').trim()] || {};
+    c.jobOwner  = c.jobOwner  || j.jobOwner  || '';
+    c.customer  = c.customer  || j.customer  || '';
+    c.jobStatus = c.jobStatus || j.jobStatus || '';
+  });
+  rows.sort((a, b) => String(a.jobNo).localeCompare(String(b.jobNo)) || String(a.charge || '').localeCompare(String(b.charge || '')));
+
+  const total = rows.reduce((s, c) => s + (Number(c[amountKey]) || 0), 0);
+  const jobsWithLines = new Set(rows.map(c => c.jobNo)).size;
+  const subTxt = `${rows.length.toLocaleString()} charge lines · ${jobsWithLines.toLocaleString()} jobs · ` +
+                 `${kind === 'cost' ? 'Unbilled Cost' : 'Unbilled Revenue'} ${fmtIndian(total)}` + (sub ? ' · ' + sub : '');
+  openDrill(rows, title, subTxt, DV_COLS_EVA, true);
+}
+
 function caSetAmountKpi(s, recs, key, title, label) {
   const total = recs.reduce((a, r) => a + (Number(r[key]) || 0), 0);
   const el = document.getElementById('kv-' + s + '-amt');
@@ -5299,7 +5383,15 @@ function formatDvCell(r, c) {
 const dvColFilters = {};
 let dvOpenFilterKey = null; // which column's dropdown is open
 
-function openDrill(records, title, sub, colSet) {
+function openDrill(records, title, sub, colSet, _evaDirect) {
+  // Canada: Unbilled Revenue / Unposted Cost → charge lines from estimatedvsactual
+  if (!_evaDirect) {
+    const kind = caEvaKindForActivePage();
+    if (kind && records && records.length && records[0].shipmentId !== undefined && records[0].charge === undefined) {
+      caOpenEvaDrill(records, title, sub, kind);
+      return;
+    }
+  }
   // billedRevenue alone isn't a reliable JPA signal - every USA (LogiSys/JPA
   // schema) record has it too. jobDate is unique to USA's schema and never
   // appears on Indonesia/Thailand's actual JPA sub-records, so excluding on
