@@ -1543,9 +1543,9 @@ tr:hover td:first-child,tr:hover td.col-grand{background:#f8fbff}
             <div class="kpi-sub" id="kv-ur-period">All jobs in period</div>
           </div>
           <div class="kpi orange">
-            <div class="kpi-top"><span class="kpi-dot orange"></span><span class="kpi-lbl">Revenue Not Billed within 3 Days of SOB</span></div>
+            <div class="kpi-top"><span class="kpi-dot orange"></span><span class="kpi-lbl">Unbilled Revenue Jobs</span></div>
             <div class="kpi-val orange" id="kv-ur-flagged">—</div>
-            <div class="kpi-sub">Unbilled ≠ 0 and SOB &gt; 3 days ago</div>
+            <div class="kpi-sub">Unbilled Revenue ≠ 0</div>
           </div>
           <div class="kpi red">
             <div class="kpi-top"><i class="kpi-icon-sm ti ti-percentage red"></i><span class="kpi-lbl">% of such jobs</span></div>
@@ -4418,7 +4418,7 @@ function renderUnbilledRev() {
   populateFilters(pageId, filtered);
   const filteredDD = applyAdditionalFilters(applyDropdownFilters(filtered, pageId), pageId);
   // Canada: unbilledRevenue = sum of the job's charge lines in estimatedvsactual (set by /api/mongo-batch)
-  const flaggedDD  = filteredDD.filter(caRevNotBilled);   // unbilled ≠ 0 and SOB more than 3 days ago
+  const flaggedDD  = filteredDD.filter(r => nzAmt(r.unbilledRevenue));   // Unbilled Revenue ≠ 0, no other condition
   _renderJPAFlaggedReport(pageId, 'ur', 'Revenue Not Billed within 3 Days of SOB', label, view, cols, filteredDD, flaggedDD);
 }
 
