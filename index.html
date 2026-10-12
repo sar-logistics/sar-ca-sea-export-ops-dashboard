@@ -5401,7 +5401,7 @@ let manualRate = 17500; // manual USD rate set by admin
 
 function getExchangeRate() { return currentCurrency === 'USD' ? CAD_PER_USD : 1; }   // fmtIndian divides by this
 
-function getCurrencySymbol() { return currentCurrency === 'USD' ? 'US$' : 'C$'; }
+function getCurrencySymbol() { return currentCurrency === 'USD' ? '$' : 'CAD '; }
 
 function caUpdateCurrencyButtons() {
   ['CAD', 'USD'].forEach(c => { const b = document.getElementById('cur-' + c.toLowerCase()); if (b) b.classList.toggle('active', currentCurrency === c); });
