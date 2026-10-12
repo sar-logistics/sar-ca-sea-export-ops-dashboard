@@ -1984,8 +1984,10 @@ const WIP_API   = '/api/wip';
 //   { records:[...] }            (current mongo-batch.js)
 //   { fields:[...], rows:[[...]] } (earlier compact mongo-batch.js)
 let rawEvaOnly = [];   // jobs only in estimatedvsactual (not in the Export/Import tabs) that have unbilled lines
+let rawEvaJobs = [];   // ALL estimatedvsactual jobs, built only from estimatedvsactual (no JPA merge)
 function caRecords(data) {
   rawEvaOnly = (data && Array.isArray(data.evaOnlyRecords)) ? data.evaOnlyRecords : [];
+  rawEvaJobs = (data && Array.isArray(data.evaJobs)) ? data.evaJobs : [];
   if (!data) return [];
   if (Array.isArray(data.records)) return data.records;
   if (Array.isArray(data.fields) && Array.isArray(data.rows)) {
@@ -2017,6 +2019,24 @@ function caHasUnbilledRev(r)  { return (Number(r.evaUnbilledRevLines)  || 0) > 0
 function caHasUnpostedCost(r) { return (Number(r.evaUnbilledCostLines) || 0) > 0 || nzAmt(r.unpostedCost); }
 function caRevNotBilled(r)  { const n = caDaysSinceSob(r); return caHasUnbilledRev(r)  && n !== null && n > 3; }
 function caCostNotPosted(r) { const n = caDaysSinceSob(r); return caHasUnpostedCost(r) && n !== null && n > 7; }
+// Revenue Not Billed / Cost Not Posted reports: jobs straight from estimatedvsactual.
+// Admin sees all; other users see the estimatedvsactual jobs whose Shipment No they can see elsewhere.
+function caEvaJobsPool() {
+  const dir = String(currentDirection || '').toLowerCase();
+  let pool = rawEvaJobs.filter(r => (r.direction || '').toLowerCase() === dir && matchesCurrentLob(r));
+  if (currentRole !== 'Admin') {
+    const visible = new Set((allSRR || []).map(r => String(r.shipmentId || '').trim()));
+    pool = pool.filter(r => visible.has(String(r.shipmentId || '').trim()));
+  }
+  return pool;
+}
+function caEvaSobDays(r) {
+  const raw = r.etdEta || r.periodDate || r.jobDate;
+  const d = raw ? new Date(raw) : null;
+  if (!d || isNaN(d)) return null;
+  const today = new Date(); today.setHours(0,0,0,0);
+  return Math.floor((today - new Date(d.getFullYear(), d.getMonth(), d.getDate())) / 864e5);
+}
 // estimatedvsactual-only jobs for the current direction (no Job Owner, so only shown to Admin)
 function caEvaOnlyPool() {
   if (currentRole !== 'Admin') return [];
@@ -4425,14 +4445,12 @@ function renderUnbilledRev() {
   const { cols, label, view } = getColumns(pageId);
   const _kpiRow = document.querySelector('#page-unbilled-rev .kpi-row');
   if (_kpiRow) _kpiRow.style.display = showScorecards(view) ? '' : 'none';
-  const filtered   = filterByDate(allSRR, pageId);
-  const evaPool    = filterByDate(caEvaOnlyPool(), pageId);
-  populateFilters(pageId, filtered.concat(evaPool));
+  // Canada: built only from estimatedvsactual (no JPA). Period = ETD/ETA column.
+  const filtered   = filterByDate(caEvaJobsPool(), pageId);
+  populateFilters(pageId, filtered);
   const filteredDD = applyAdditionalFilters(applyDropdownFilters(filtered, pageId), pageId);
-  const evaDD      = applyAdditionalFilters(applyDropdownFilters(evaPool, pageId), pageId);
-  // Canada: any estimatedvsactual charge line with Unbilled Revenue ≠ 0, no other condition —
-  // including jobs that are only in estimatedvsactual (not in the Import/Export tab)
-  const flaggedDD  = filteredDD.concat(evaDD).filter(caHasUnbilledRev);
+  // Any charge line with Unbilled Revenue ≠ 0, no other condition
+  const flaggedDD  = filteredDD.filter(r => (Number(r.evaUnbilledRevLines) || 0) > 0);
   _renderJPAFlaggedReport(pageId, 'ur', 'Revenue Not Billed within 3 Days of SOB', label, view, cols, filteredDD, flaggedDD);
 }
 
@@ -4441,13 +4459,12 @@ function renderUnpostedCost() {
   const { cols, label, view } = getColumns(pageId);
   const _kpiRow = document.querySelector('#page-unposted-cost .kpi-row');
   if (_kpiRow) _kpiRow.style.display = showScorecards(view) ? '' : 'none';
-  const filtered   = filterByDate(allSRR, pageId);
-  const evaPool    = filterByDate(caEvaOnlyPool(), pageId);
-  populateFilters(pageId, filtered.concat(evaPool));
+  // Canada: built only from estimatedvsactual (no JPA). Period = ETD/ETA column.
+  const filtered   = filterByDate(caEvaJobsPool(), pageId);
+  populateFilters(pageId, filtered);
   const filteredDD = applyAdditionalFilters(applyDropdownFilters(filtered, pageId), pageId);
-  const evaDD      = applyAdditionalFilters(applyDropdownFilters(evaPool, pageId), pageId);
-  // Canada: any estimatedvsactual charge line with Unbilled Cost ≠ 0 and SOB more than 7 days ago
-  const flaggedDD  = filteredDD.concat(evaDD).filter(caCostNotPosted);
+  // Any charge line with Unbilled Cost ≠ 0, and ETD/ETA (SOB) more than 7 days ago
+  const flaggedDD  = filteredDD.filter(r => (Number(r.evaUnbilledCostLines) || 0) > 0 && (caEvaSobDays(r) ?? -1) > 7);
   _renderJPAFlaggedReport(pageId, 'uc', 'Cost Not Posted within 7 Days of SOB', label, view, cols, filteredDD, flaggedDD);
 }
 
