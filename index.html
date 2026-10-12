@@ -1536,7 +1536,7 @@ tr:hover td:first-child,tr:hover td.col-grand{background:#f8fbff}
           </div>
           <button class="dv-btn" onclick="refreshData('unbilled-rev')" style="display:inline-flex;align-items:center;gap:5px"><i class="ti ti-refresh" style="font-size:13px"></i> Refresh</button>
         </div>
-        <div class="kpi-row" style="grid-template-columns:repeat(4,minmax(0,1fr))">
+        <div class="kpi-row">
           <div class="kpi blue">
             <div class="kpi-top"><i class="kpi-icon-sm ti ti-chart-bar blue"></i><span class="kpi-lbl">Total Jobs</span></div>
             <div class="kpi-val blue" id="kv-ur-total">—</div>
@@ -1551,11 +1551,6 @@ tr:hover td:first-child,tr:hover td.col-grand{background:#f8fbff}
             <div class="kpi-top"><i class="kpi-icon-sm ti ti-percentage red"></i><span class="kpi-lbl">% of such jobs</span></div>
             <div class="kpi-val red" id="kv-ur-pct">—</div>
             <div class="kpi-sub" id="kv-ur-pct-sub">% of total jobs</div>
-          </div>
-          <div class="kpi orange">
-            <div class="kpi-top"><i class="kpi-icon-sm ti ti-currency-dollar orange"></i><span class="kpi-lbl">Unbilled Revenue (CAD)</span></div>
-            <div class="kpi-val orange" id="kv-ur-amt">—</div>
-            <div class="kpi-sub" id="kv-ur-amt-sub">CAD</div>
           </div>
         </div>
         <div class="sec-hd">
@@ -1661,7 +1656,7 @@ tr:hover td:first-child,tr:hover td.col-grand{background:#f8fbff}
           </div>
           <button class="dv-btn" onclick="refreshData('unposted-cost')" style="display:inline-flex;align-items:center;gap:5px"><i class="ti ti-refresh" style="font-size:13px"></i> Refresh</button>
         </div>
-        <div class="kpi-row" style="grid-template-columns:repeat(4,minmax(0,1fr))">
+        <div class="kpi-row">
           <div class="kpi blue">
             <div class="kpi-top"><i class="kpi-icon-sm ti ti-chart-bar blue"></i><span class="kpi-lbl">Total Jobs</span></div>
             <div class="kpi-val blue" id="kv-uc-total">—</div>
@@ -1676,11 +1671,6 @@ tr:hover td:first-child,tr:hover td.col-grand{background:#f8fbff}
             <div class="kpi-top"><i class="kpi-icon-sm ti ti-percentage red"></i><span class="kpi-lbl">% of such jobs</span></div>
             <div class="kpi-val red" id="kv-uc-pct">—</div>
             <div class="kpi-sub" id="kv-uc-pct-sub">% of total jobs</div>
-          </div>
-          <div class="kpi orange">
-            <div class="kpi-top"><i class="kpi-icon-sm ti ti-currency-dollar orange"></i><span class="kpi-lbl">Unposted Cost (CAD)</span></div>
-            <div class="kpi-val orange" id="kv-uc-amt">—</div>
-            <div class="kpi-sub" id="kv-uc-amt-sub">CAD</div>
           </div>
         </div>
         <div class="sec-hd">
@@ -2105,13 +2095,6 @@ async function caOpenEvaDrill(jobRecs, title, sub, kind) {
   openDrill(rows, title, subTxt, DV_COLS_EVA, true);
 }
 
-function caSetAmountKpi(s, recs, key, title, label) {
-  const total = recs.reduce((a, r) => a + (Number(r[key]) || 0), 0);
-  const el = document.getElementById('kv-' + s + '-amt');
-  if (el) { el.textContent = fmtIndian(total); el.style.cursor = 'pointer'; el.onclick = () => openDrill(recs, title, label); }
-  const sub = document.getElementById('kv-' + s + '-amt-sub');
-  if (sub) sub.textContent = 'Across ' + recs.length.toLocaleString() + ' jobs';
-}
 
 // ── PRE-CALCULATE MAIN METRICS BADGES ───────────────────────
 function updateMainMetricsBadges() {
@@ -4437,7 +4420,6 @@ function renderUnbilledRev() {
   // Canada: unbilledRevenue = sum of the job's charge lines in estimatedvsactual (set by /api/mongo-batch)
   const flaggedDD  = filteredDD.filter(r => nzAmt(r.unbilledRevenue));
   _renderJPAFlaggedReport(pageId, 'ur', 'Unbilled Revenue', label, view, cols, filteredDD, flaggedDD);
-  caSetAmountKpi('ur', flaggedDD, 'unbilledRevenue', 'Unbilled Revenue', label);
 }
 
 function renderUnpostedCost() {
@@ -4451,7 +4433,6 @@ function renderUnpostedCost() {
   // Canada: unpostedCost = sum of the job's charge-line unbilledCost in estimatedvsactual
   const flaggedDD  = filteredDD.filter(r => nzAmt(r.unpostedCost));
   _renderJPAFlaggedReport(pageId, 'uc', 'Unposted Cost', label, view, cols, filteredDD, flaggedDD);
-  caSetAmountKpi('uc', flaggedDD, 'unpostedCost', 'Unposted Cost', label);
 }
 
 // ── Shared JPA flagged report renderer ───────────────────────
