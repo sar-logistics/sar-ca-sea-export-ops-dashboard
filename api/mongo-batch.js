@@ -45,33 +45,62 @@ const EVA_COLLECTION = 'estimatedvsactual';
 const toNum = v => { const n = typeof v === 'number' ? v : parseFloat(String(v ?? '').replace(/[,\s]/g, '')); return isNaN(n) ? 0 : n; };
 const round2 = n => Math.round(n * 100) / 100;
 
+const evaDirection = lob => { const u = String(lob || '').toUpperCase(); return /EXP/.test(u) ? 'Export' : /IMP/.test(u) ? 'Import' : ''; };
+
 function sumEvaByJob(evaRows) {
   const byJob = new Map();
   for (const e of evaRows) {
     const job = String(e.jobNo ?? '').trim();
     if (!job) continue;
-    const t = byJob.get(job) || { unbilledRevenue: 0, unbilledCost: 0, lines: 0 };
-    t.unbilledRevenue += toNum(e.unbilledRevenue);
-    t.unbilledCost    += toNum(e.unbilledCost);
+    let t = byJob.get(job);
+    if (!t) {
+      t = { unbilledRevenue: 0, unbilledCost: 0, lines: 0, revLines: 0, costLines: 0,
+            lob2: e.lob2 || '', direction: e.direction || evaDirection(e.lob2 || e.lob),
+            etdEta: e.etdEta || '', jobDate: e.jobDate || '', location: e.location || '',
+            organization: e.organization || '', salesPerson: e.salesPerson || '', sourceYear: e.sourceYear || '' };
+      byJob.set(job, t);
+    }
+    const rev = toNum(e.unbilledRevenue), cost = toNum(e.unbilledCost);
+    t.unbilledRevenue += rev;
+    t.unbilledCost    += cost;
     t.lines++;
-    byJob.set(job, t);
+    if (Math.abs(rev)  > 0.005) t.revLines++;
+    if (Math.abs(cost) > 0.005) t.costLines++;
   }
   return byJob;
 }
 
+// Writes the summed amounts onto the dashboard jobs, and returns the jobs that exist only in
+// estimatedvsactual (not in ca_ops_export / ca_ops_import) but have unbilled lines, so the
+// Revenue Not Billed / Cost Not Posted pages can still count them.
 function applyEvaAmounts(records, byJob) {
-  if (!byJob.size) return { source: 'jpa', matched: 0 };
+  if (!byJob.size) return { source: 'jpa', matched: 0, evaOnly: [] };
   let matched = 0;
+  const seen = new Set();
   for (const r of records) {
-    const t = byJob.get(String(r.shipmentId ?? '').trim());
-    r.jpaUnbilledRevenue = r.unbilledRevenue;
-    r.jpaUnpostedCost    = r.unpostedCost;
-    r.unbilledRevenue    = t ? round2(t.unbilledRevenue) : 0;
-    r.unpostedCost       = t ? round2(t.unbilledCost)    : 0;
-    r.evaChargeLines     = t ? t.lines : 0;
-    if (t) matched++;
+    const id = String(r.shipmentId ?? '').trim();
+    const t = byJob.get(id);
+    r.jpaUnbilledRevenue   = r.unbilledRevenue;
+    r.jpaUnpostedCost      = r.unpostedCost;
+    r.unbilledRevenue      = t ? round2(t.unbilledRevenue) : 0;
+    r.unpostedCost         = t ? round2(t.unbilledCost)    : 0;
+    r.evaChargeLines       = t ? t.lines     : 0;
+    r.evaUnbilledRevLines  = t ? t.revLines  : 0;
+    r.evaUnbilledCostLines = t ? t.costLines : 0;
+    if (t) { matched++; seen.add(id); }
   }
-  return { source: EVA_COLLECTION, matched };
+  const evaOnly = [];
+  for (const [job, t] of byJob) {
+    if (seen.has(job) || (!t.revLines && !t.costLines) || !t.direction) continue;
+    evaOnly.push({
+      shipmentId: job, direction: t.direction, lob: t.lob2 || ('SEA ' + t.direction.toUpperCase()),
+      jobDate: t.jobDate, periodDate: t.etdEta || t.jobDate, branch: t.location, location: t.location,
+      customer: '', organization: t.organization, salesPerson: t.salesPerson, jobOwner: '', jobStatus: '', sourceYear: t.sourceYear,
+      unbilledRevenue: round2(t.unbilledRevenue), unpostedCost: round2(t.unbilledCost),
+      evaChargeLines: t.lines, evaUnbilledRevLines: t.revLines, evaUnbilledCostLines: t.costLines, evaOnly: true
+    });
+  }
+  return { source: EVA_COLLECTION, matched, evaOnly };
 }
 
 let cache = { payload: null, builtAt: null };
@@ -82,14 +111,16 @@ async function buildCache(db) {
   const impDocs  = await db.collection(COLS.Import).find({}).toArray();
   const userDocs = await db.collection('users').find({}).toArray();
   const evaRows  = await db.collection(EVA_COLLECTION)
-    .find({}, { projection: { _id: 0, jobNo: 1, unbilledRevenue: 1, unbilledCost: 1 } }).toArray();
+    .find({}, { projection: { _id: 0, jobNo: 1, unbilledRevenue: 1, unbilledCost: 1, lob: 1, lob2: 1, direction: 1,
+                               etdEta: 1, jobDate: 1, location: 1, organization: 1, salesPerson: 1, sourceYear: 1 } }).toArray();
   const all      = [...expDocs, ...impDocs];
   const amounts  = applyEvaAmounts(all, sumEvaByJob(evaRows));
   const records  = all.map(compact);
   console.log(`[CA-OPS] Export: ${expDocs.length}, Import: ${impDocs.length}, users: ${userDocs.length}, ` +
-    `amounts from ${amounts.source} (${evaRows.length} charge lines, ${amounts.matched} jobs matched)`);
+    `amounts from ${amounts.source} (${evaRows.length} charge lines, ${amounts.matched} jobs matched, ${amounts.evaOnly.length} only in ${EVA_COLLECTION})`);
   cache = {
-    payload: { records, users: userDocs, amountsSource: amounts.source, evaJobsMatched: amounts.matched },
+    payload: { records, users: userDocs, amountsSource: amounts.source, evaJobsMatched: amounts.matched,
+               evaOnlyRecords: amounts.evaOnly.map(compact) },
     builtAt: new Date().toISOString()
   };
   return cache;
