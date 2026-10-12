@@ -1026,11 +1026,11 @@ tr:hover td:first-child,tr:hover td.col-grand{background:#f8fbff}
         <i class="ti ti-chevron-down sec-chev"></i>
       </div>
       <div class="nav-section-body" id="sec-performance-body">
-        <div class="nav-item" data-tooltip="Provisional revenue not yet billed" onclick="setPage('revenue-not-billed','Unbilled Revenue','Job: Revenue &amp; Cost',this)">
-          <i class="ti ti-receipt"></i><span class="nav-item-label">Unbilled Revenue</span><span class="nav-badge hidden" id="badge-unbilled-rev">0</span>
+        <div class="nav-item" data-tooltip="Unbilled revenue more than 3 days after vessel sailing (SOB)" onclick="setPage('revenue-not-billed','Revenue Not Billed within 3 Days of SOB','Job: Revenue &amp; Cost',this)">
+          <i class="ti ti-receipt"></i><span class="nav-item-label">Revenue Not Billed within 3 Days of SOB</span><span class="nav-badge hidden" id="badge-unbilled-rev">0</span>
         </div>
-        <div class="nav-item" data-tooltip="Provisional cost not yet posted" onclick="setPage('cost-not-posted','Unposted Cost','Job: Revenue &amp; Cost',this)">
-          <i class="ti ti-coins"></i><span class="nav-item-label">Unposted Cost</span><span class="nav-badge hidden" id="badge-unposted-cost">0</span>
+        <div class="nav-item" data-tooltip="Unposted cost more than 7 days after vessel sailing (SOB)" onclick="setPage('cost-not-posted','Cost Not Posted within 7 Days of SOB','Job: Revenue &amp; Cost',this)">
+          <i class="ti ti-coins"></i><span class="nav-item-label">Cost Not Posted within 7 Days of SOB</span><span class="nav-badge hidden" id="badge-unposted-cost">0</span>
         </div>
       </div><!-- /sec-performance-body -->
 
@@ -1543,9 +1543,9 @@ tr:hover td:first-child,tr:hover td.col-grand{background:#f8fbff}
             <div class="kpi-sub" id="kv-ur-period">All jobs in period</div>
           </div>
           <div class="kpi orange">
-            <div class="kpi-top"><span class="kpi-dot orange"></span><span class="kpi-lbl">Unbilled Revenue Jobs</span></div>
+            <div class="kpi-top"><span class="kpi-dot orange"></span><span class="kpi-lbl">Revenue Not Billed within 3 Days of SOB</span></div>
             <div class="kpi-val orange" id="kv-ur-flagged">—</div>
-            <div class="kpi-sub">Unbilled Revenue ≠ 0</div>
+            <div class="kpi-sub">Unbilled ≠ 0 and SOB &gt; 3 days ago</div>
           </div>
           <div class="kpi red">
             <div class="kpi-top"><i class="kpi-icon-sm ti ti-percentage red"></i><span class="kpi-lbl">% of such jobs</span></div>
@@ -1554,7 +1554,7 @@ tr:hover td:first-child,tr:hover td.col-grand{background:#f8fbff}
           </div>
         </div>
         <div class="sec-hd">
-          <div class="sec-title">Branch › Job Owner — Jobs with Unbilled Revenue</div>
+          <div class="sec-title">Branch › Job Owner — Revenue Not Billed within 3 Days of SOB</div>
           <div style="display:flex;align-items:center;gap:6px">
             <div class="sec-ct" id="sc-unbilled-rev">Loading…</div>
             <div style="width:1px;height:14px;background:var(--border);margin:0 2px"></div>
@@ -1663,9 +1663,9 @@ tr:hover td:first-child,tr:hover td.col-grand{background:#f8fbff}
             <div class="kpi-sub" id="kv-uc-period">All jobs in period</div>
           </div>
           <div class="kpi orange">
-            <div class="kpi-top"><span class="kpi-dot orange"></span><span class="kpi-lbl">Unposted Cost Jobs</span></div>
+            <div class="kpi-top"><span class="kpi-dot orange"></span><span class="kpi-lbl">Cost Not Posted within 7 Days of SOB</span></div>
             <div class="kpi-val orange" id="kv-uc-flagged">—</div>
-            <div class="kpi-sub">Unposted Cost ≠ 0</div>
+            <div class="kpi-sub">Unposted ≠ 0 and SOB &gt; 7 days ago</div>
           </div>
           <div class="kpi red">
             <div class="kpi-top"><i class="kpi-icon-sm ti ti-percentage red"></i><span class="kpi-lbl">% of such jobs</span></div>
@@ -1674,7 +1674,7 @@ tr:hover td:first-child,tr:hover td.col-grand{background:#f8fbff}
           </div>
         </div>
         <div class="sec-hd">
-          <div class="sec-title">Branch › Job Owner — Jobs with Unposted Cost</div>
+          <div class="sec-title">Branch › Job Owner — Cost Not Posted within 7 Days of SOB</div>
           <div style="display:flex;align-items:center;gap:6px">
             <div class="sec-ct" id="sc-unposted-cost">Loading…</div>
             <div style="width:1px;height:14px;background:var(--border);margin:0 2px"></div>
@@ -4418,8 +4418,8 @@ function renderUnbilledRev() {
   populateFilters(pageId, filtered);
   const filteredDD = applyAdditionalFilters(applyDropdownFilters(filtered, pageId), pageId);
   // Canada: unbilledRevenue = sum of the job's charge lines in estimatedvsactual (set by /api/mongo-batch)
-  const flaggedDD  = filteredDD.filter(r => nzAmt(r.unbilledRevenue));
-  _renderJPAFlaggedReport(pageId, 'ur', 'Unbilled Revenue', label, view, cols, filteredDD, flaggedDD);
+  const flaggedDD  = filteredDD.filter(caRevNotBilled);   // unbilled ≠ 0 and SOB more than 3 days ago
+  _renderJPAFlaggedReport(pageId, 'ur', 'Revenue Not Billed within 3 Days of SOB', label, view, cols, filteredDD, flaggedDD);
 }
 
 function renderUnpostedCost() {
@@ -4431,8 +4431,8 @@ function renderUnpostedCost() {
   populateFilters(pageId, filtered);
   const filteredDD = applyAdditionalFilters(applyDropdownFilters(filtered, pageId), pageId);
   // Canada: unpostedCost = sum of the job's charge-line unbilledCost in estimatedvsactual
-  const flaggedDD  = filteredDD.filter(r => nzAmt(r.unpostedCost));
-  _renderJPAFlaggedReport(pageId, 'uc', 'Unposted Cost', label, view, cols, filteredDD, flaggedDD);
+  const flaggedDD  = filteredDD.filter(caCostNotPosted);  // unposted ≠ 0 and SOB more than 7 days ago
+  _renderJPAFlaggedReport(pageId, 'uc', 'Cost Not Posted within 7 Days of SOB', label, view, cols, filteredDD, flaggedDD);
 }
 
 // ── Shared JPA flagged report renderer ───────────────────────
