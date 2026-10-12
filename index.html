@@ -1983,7 +1983,9 @@ const WIP_API   = '/api/wip';
 // Accepts either response shape from /api/mongo-batch:
 //   { records:[...] }            (current mongo-batch.js)
 //   { fields:[...], rows:[[...]] } (earlier compact mongo-batch.js)
+let rawEvaOnly = [];   // jobs only in estimatedvsactual (not in the Export/Import tabs) that have unbilled lines
 function caRecords(data) {
+  rawEvaOnly = (data && Array.isArray(data.evaOnlyRecords)) ? data.evaOnlyRecords : [];
   if (!data) return [];
   if (Array.isArray(data.records)) return data.records;
   if (Array.isArray(data.fields) && Array.isArray(data.rows)) {
@@ -2009,8 +2011,17 @@ function caDaysSinceSob(r) {
   const today = new Date(); today.setHours(0,0,0,0);
   return Math.floor((today - new Date(d.getFullYear(), d.getMonth(), d.getDate())) / 864e5);
 }
-function caRevNotBilled(r)  { const n = caDaysSinceSob(r); return nzAmt(r.unbilledRevenue) && n !== null && n > 3; }
-function caCostNotPosted(r) { const n = caDaysSinceSob(r); return nzAmt(r.unpostedCost)    && n !== null && n > 7; }
+// A job has unbilled revenue / unposted cost if ANY of its estimatedvsactual charge lines is non-zero
+// (lines like +250 / -250 still count, even though they net to 0)
+function caHasUnbilledRev(r)  { return (Number(r.evaUnbilledRevLines)  || 0) > 0 || nzAmt(r.unbilledRevenue); }
+function caHasUnpostedCost(r) { return (Number(r.evaUnbilledCostLines) || 0) > 0 || nzAmt(r.unpostedCost); }
+function caRevNotBilled(r)  { const n = caDaysSinceSob(r); return caHasUnbilledRev(r)  && n !== null && n > 3; }
+function caCostNotPosted(r) { const n = caDaysSinceSob(r); return caHasUnpostedCost(r) && n !== null && n > 7; }
+// estimatedvsactual-only jobs for the current direction (no Job Owner, so only shown to Admin)
+function caEvaOnlyPool() {
+  if (currentRole !== 'Admin') return [];
+  return rawEvaOnly.filter(r => (r.direction || '').toLowerCase() === String(currentDirection || '').toLowerCase() && matchesCurrentLob(r));
+}
 // ── CANADA: charge-level drill-down from MongoDB "estimatedvsactual" ─────────
 // On the Unbilled Revenue / Unposted Cost pages, clicking any number shows the
 // charge lines behind it (one row per charge) instead of one row per job.
@@ -4415,10 +4426,13 @@ function renderUnbilledRev() {
   const _kpiRow = document.querySelector('#page-unbilled-rev .kpi-row');
   if (_kpiRow) _kpiRow.style.display = showScorecards(view) ? '' : 'none';
   const filtered   = filterByDate(allSRR, pageId);
-  populateFilters(pageId, filtered);
+  const evaPool    = filterByDate(caEvaOnlyPool(), pageId);
+  populateFilters(pageId, filtered.concat(evaPool));
   const filteredDD = applyAdditionalFilters(applyDropdownFilters(filtered, pageId), pageId);
-  // Canada: unbilledRevenue = sum of the job's charge lines in estimatedvsactual (set by /api/mongo-batch)
-  const flaggedDD  = filteredDD.filter(r => nzAmt(r.unbilledRevenue));   // Unbilled Revenue ≠ 0, no other condition
+  const evaDD      = applyAdditionalFilters(applyDropdownFilters(evaPool, pageId), pageId);
+  // Canada: any estimatedvsactual charge line with Unbilled Revenue ≠ 0, no other condition —
+  // including jobs that are only in estimatedvsactual (not in the Import/Export tab)
+  const flaggedDD  = filteredDD.concat(evaDD).filter(caHasUnbilledRev);
   _renderJPAFlaggedReport(pageId, 'ur', 'Revenue Not Billed within 3 Days of SOB', label, view, cols, filteredDD, flaggedDD);
 }
 
@@ -4428,10 +4442,12 @@ function renderUnpostedCost() {
   const _kpiRow = document.querySelector('#page-unposted-cost .kpi-row');
   if (_kpiRow) _kpiRow.style.display = showScorecards(view) ? '' : 'none';
   const filtered   = filterByDate(allSRR, pageId);
-  populateFilters(pageId, filtered);
+  const evaPool    = filterByDate(caEvaOnlyPool(), pageId);
+  populateFilters(pageId, filtered.concat(evaPool));
   const filteredDD = applyAdditionalFilters(applyDropdownFilters(filtered, pageId), pageId);
-  // Canada: unpostedCost = sum of the job's charge-line unbilledCost in estimatedvsactual
-  const flaggedDD  = filteredDD.filter(caCostNotPosted);  // unposted ≠ 0 and SOB more than 7 days ago
+  const evaDD      = applyAdditionalFilters(applyDropdownFilters(evaPool, pageId), pageId);
+  // Canada: any estimatedvsactual charge line with Unbilled Cost ≠ 0 and SOB more than 7 days ago
+  const flaggedDD  = filteredDD.concat(evaDD).filter(caCostNotPosted);
   _renderJPAFlaggedReport(pageId, 'uc', 'Cost Not Posted within 7 Days of SOB', label, view, cols, filteredDD, flaggedDD);
 }
 
