@@ -17,7 +17,7 @@ const TTL_MS = 15 * 60 * 1000;                       // 15 min (Refresh button b
 // Empty cells are dropped from each record to keep the response well under Vercel's 4.5 MB limit.
 // These keys are always kept because the dashboard checks for their presence.
 const ALWAYS_KEEP = new Set(['shipmentId', 'direction', 'lob', 'jobDate', 'periodDate', 'isOpen', 'jobStatus', 'jobOwner',
-                             'unbilledRevenue', 'unpostedCost']);
+                             'unbilledRevenue', 'unpostedCost', 'evaUnbilledRevLines', 'evaUnbilledCostLines']);
 function compact(doc) {
   const out = {};
   for (const [k, v] of Object.entries(doc)) {
@@ -56,7 +56,7 @@ function sumEvaByJob(evaRows) {
     if (!t) {
       t = { unbilledRevenue: 0, unbilledCost: 0, lines: 0, revLines: 0, costLines: 0,
             lob2: e.lob2 || '', direction: e.direction || evaDirection(e.lob2 || e.lob),
-            etdEta: e.etdEta || '', jobDate: e.jobDate || '', location: e.location || '',
+            etdEta: e.etdEta || '', ataAtd: e.ataAtd || '', jobDate: e.jobDate || '', location: e.location || '',
             organization: e.organization || '', salesPerson: e.salesPerson || '', sourceYear: e.sourceYear || '' };
       byJob.set(job, t);
     }
@@ -103,6 +103,24 @@ function applyEvaAmounts(records, byJob) {
   return { source: EVA_COLLECTION, matched, evaOnly };
 }
 
+// One summary per estimatedvsactual job, built only from estimatedvsactual (no JPA merge).
+// Used by the Revenue Not Billed / Cost Not Posted reports.
+function evaJobSummaries(byJob) {
+  const out = [];
+  for (const [job, t] of byJob) {
+    if (!t.direction) continue;
+    out.push({
+      shipmentId: job, direction: t.direction, lob: t.lob2 || ('SEA ' + t.direction.toUpperCase()),
+      jobDate: t.jobDate, periodDate: t.etdEta || t.jobDate, etdEta: t.etdEta, ataAtd: t.ataAtd,
+      branch: t.location, location: t.location, jobOwner: t.salesPerson, salesPerson: t.salesPerson,
+      organization: t.organization, sourceYear: t.sourceYear,
+      unbilledRevenue: round2(t.unbilledRevenue), unpostedCost: round2(t.unbilledCost),
+      evaChargeLines: t.lines, evaUnbilledRevLines: t.revLines, evaUnbilledCostLines: t.costLines, evaJob: true
+    });
+  }
+  return out;
+}
+
 let cache = { payload: null, builtAt: null };
 
 async function buildCache(db) {
@@ -114,13 +132,15 @@ async function buildCache(db) {
     .find({}, { projection: { _id: 0, jobNo: 1, unbilledRevenue: 1, unbilledCost: 1, lob: 1, lob2: 1, direction: 1,
                                etdEta: 1, jobDate: 1, location: 1, organization: 1, salesPerson: 1, sourceYear: 1 } }).toArray();
   const all      = [...expDocs, ...impDocs];
-  const amounts  = applyEvaAmounts(all, sumEvaByJob(evaRows));
+  const evaByJob = sumEvaByJob(evaRows);
+  const evaJobs  = evaJobSummaries(evaByJob);
+  const amounts  = applyEvaAmounts(all, evaByJob);
   const records  = all.map(compact);
   console.log(`[CA-OPS] Export: ${expDocs.length}, Import: ${impDocs.length}, users: ${userDocs.length}, ` +
     `amounts from ${amounts.source} (${evaRows.length} charge lines, ${amounts.matched} jobs matched, ${amounts.evaOnly.length} only in ${EVA_COLLECTION})`);
   cache = {
     payload: { records, users: userDocs, amountsSource: amounts.source, evaJobsMatched: amounts.matched,
-               evaOnlyRecords: amounts.evaOnly.map(compact) },
+               evaOnlyRecords: amounts.evaOnly.map(compact), evaJobs: evaJobs.map(compact) },
     builtAt: new Date().toISOString()
   };
   return cache;
