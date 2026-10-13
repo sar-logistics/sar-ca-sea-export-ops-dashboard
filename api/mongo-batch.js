@@ -3,6 +3,7 @@ import { MongoClient } from 'mongodb';
 // Canada Sea Ops — dashboard data route (same contract as the USA / Thailand mongo-batch.js)
 //   GET                                                     → { records, users, builtAt }
 //   POST (x-batch-secret) { action:'wipe', direction }      → clears ca_ops_export / ca_ops_import
+//   POST (x-batch-secret) { action:'wipe', direction, sourceYear:'CY2025' } → clears only that year's jobs
 //   POST (x-batch-secret) { action:'push', direction, records } → inserts a chunk (CanadaOpsPush.gs)
 //   POST (x-batch-secret) { action:'wipe'|'push', collection:'estimatedvsactual', records }
 //        → charge-level ETD/ETA tab (CanadaEstVsActPush.gs); only whitelisted collections allowed
@@ -137,6 +138,11 @@ async function buildCache(db) {
                                etdEtaNew: 1, etdEta: 1, ataAtd: 1, jobDate: 1, location: 1, jobOwner: 1, operationLockDate: 1,
                                organization: 1, salesPerson: 1, sourceYear: 1 } }).toArray();
   const all      = [...expDocs, ...impDocs];
+  // Last time each data set was pushed from the sheets (syncedAt is stamped by the Apps Script pushes)
+  const maxIso   = arr => arr.reduce((m, d) => (d && d.syncedAt && String(d.syncedAt) > m ? String(d.syncedAt) : m), '');
+  const evaLast  = await db.collection(EVA_COLLECTION).find({ syncedAt: { $exists: true } }, { projection: { _id: 0, syncedAt: 1 } })
+                     .sort({ syncedAt: -1 }).limit(1).toArray();
+  const dataRefreshedAt = { jobs: maxIso(all), estimatedVsActual: evaLast[0] ? String(evaLast[0].syncedAt) : '' };
   const evaByJob = sumEvaByJob(evaRows);
   const evaJobs  = evaJobSummaries(evaByJob);
   const amounts  = applyEvaAmounts(all, evaByJob);
@@ -145,7 +151,7 @@ async function buildCache(db) {
     `amounts from ${amounts.source} (${evaRows.length} charge lines, ${amounts.matched} jobs matched, ${amounts.evaOnly.length} only in ${EVA_COLLECTION})`);
   cache = {
     payload: { records, users: userDocs, amountsSource: amounts.source, evaJobsMatched: amounts.matched,
-               evaOnlyRecords: amounts.evaOnly.map(compact), evaJobs: evaJobs.map(compact) },
+               evaOnlyRecords: amounts.evaOnly.map(compact), evaJobs: evaJobs.map(compact), dataRefreshedAt },
     builtAt: new Date().toISOString()
   };
   return cache;
@@ -161,7 +167,7 @@ export default async function handler(req, res) {
     const secret = req.headers['x-batch-secret'];
     if (!SECRET || secret !== SECRET) return res.status(401).json({ error: 'Unauthorized' });
 
-    const { action, records, direction, collection } = req.body || {};
+    const { action, records, direction, collection, sourceYear } = req.body || {};
     const colName = collection
       ? (EXTRA_COLLECTIONS.has(collection) ? collection : null)
       : COLS[direction];
@@ -170,7 +176,7 @@ export default async function handler(req, res) {
     try {
       const db = (await getClient()).db(DB);
       if (action === 'wipe') {
-        const result = await db.collection(colName).deleteMany({});
+        const result = await db.collection(colName).deleteMany(sourceYear ? { sourceYear: String(sourceYear) } : {});   // per-year scripts only replace their own year
         cache = { payload: null, builtAt: null };
         return res.status(200).json({ deleted: result.deletedCount, collection: colName });
       }
