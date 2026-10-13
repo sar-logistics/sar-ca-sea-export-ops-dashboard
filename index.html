@@ -111,6 +111,11 @@ body{font-family:var(--font);background:var(--bg);color:var(--text1);font-size:1
 .tb-ud-role{font-size:10.5px;color:var(--accent);margin-top:2px;font-weight:500;letter-spacing:.03em;text-transform:uppercase}
 .tb-ud-divider{height:1px;background:var(--border)}
 .tb-ud-item{display:flex;align-items:center;gap:10px;padding:12px 16px;font-size:12.5px;color:var(--text2)}
+.tb-refreshed{display:flex;align-items:center;gap:6px;margin-right:12px;padding:6px 12px;border:1px solid var(--border);border-radius:999px;background:#F8FAFC;font-size:12px;color:var(--text2);white-space:nowrap}
+.tb-refreshed b{font-weight:600;color:#0f172a}
+.tb-refreshed.stale{background:#FFF7ED;border-color:#FDBA74}
+.tb-refreshed.stale b{color:#C2410C}
+@media (max-width:900px){.tb-refreshed span{display:none}}
 .ca-cur-btn{flex:1;border:0;background:transparent;color:var(--text2);font:inherit;font-size:12px;font-weight:600;padding:6px 0;border-radius:7px;cursor:pointer;transition:background .15s,color .15s}
 .ca-cur-btn:hover{background:#E5EDF7}
 .ca-cur-btn.active{background:#1F3A6E;color:#fff}
@@ -1105,6 +1110,9 @@ tr:hover td:first-child,tr:hover td.col-grand{background:#f8fbff}
     <div class="tb-divider"></div>
     <div id="tb-filter-row" style="display:flex;align-items:center;gap:8px;flex:1"><!-- filters injected here --></div>
     <div class="tb-spacer"></div>
+    <div id="tb-data-refreshed" class="tb-refreshed" title="Last time data was pushed from the CY sheets">
+      <i class="ti ti-clock-hour-4"></i><span>Data refreshed: <b id="tb-data-refreshed-val">—</b></span>
+    </div>
     <div class="tb-hamburger-menu">
       <button class="tb-hamburger-btn" onclick="toggleUserMenu()" id="userMenuBtn">
         <i class="ti ti-menu-2"></i>
@@ -2034,7 +2042,33 @@ const WIP_API   = '/api/wip';
 //   { fields:[...], rows:[[...]] } (earlier compact mongo-batch.js)
 let rawEvaOnly = [];   // jobs only in estimatedvsactual (not in the Export/Import tabs) that have unbilled lines
 let rawEvaJobs = [];   // ALL estimatedvsactual jobs, built only from estimatedvsactual (no JPA merge)
+
+// "Data refreshed" in the top bar = when the sheets were last pushed to MongoDB.
+// Shows the older of the two pushes (jobs / estimatedvsactual), so the label never overstates freshness.
+function caFmtWhen(iso) {
+  const d = iso ? new Date(iso) : null;
+  if (!d || isNaN(d)) return '';
+  return d.toLocaleString('en-GB', { day:'numeric', month:'short', year:'numeric', hour:'numeric', minute:'2-digit', hour12:true });
+}
+function caRenderDataRefreshed(info) {
+  const box = document.getElementById('tb-data-refreshed'), val = document.getElementById('tb-data-refreshed-val');
+  if (!box || !val) return;
+  const jobs = info && info.jobs, eva = info && info.estimatedVsActual;
+  const times = [jobs, eva].filter(Boolean).sort();
+  if (!times.length) { val.textContent = '—'; box.classList.remove('stale');
+    box.title = 'No push time recorded yet — run the CY2025 / CY2026 and Estimated vs Actual pushes once'; return; }
+  const shown = times[0];
+  val.textContent = caFmtWhen(shown);
+  const hours = (Date.now() - new Date(shown)) / 36e5;
+  box.classList.toggle('stale', hours > 26);   // older than a day (+2h grace) → amber
+  box.title = 'Last push from the sheets\n' +
+    'Jobs (Export / Import): ' + (caFmtWhen(jobs) || 'not recorded') + '\n' +
+    'Estimated vs Actual: '    + (caFmtWhen(eva)  || 'not recorded') +
+    (hours > 26 ? '\n⚠ More than a day old' : '');
+}
+
 function caRecords(data) {
+  caRenderDataRefreshed(data && data.dataRefreshedAt);
   rawEvaOnly = (data && Array.isArray(data.evaOnlyRecords)) ? data.evaOnlyRecords : [];
   rawEvaJobs = (data && Array.isArray(data.evaJobs)) ? data.evaJobs : [];
   if (!data) return [];
