@@ -1237,7 +1237,7 @@ tr:hover td:first-child,tr:hover td.col-grand{background:#f8fbff}
               <i class="ti ti-adjustments-horizontal" style="font-size:13px"></i> Filters
             </button>
             <div class="add-filters-panel" id="afp-summary">
-              <div class="add-filter-row">
+              <div class="add-filter-row" style="display:none">
                 <div class="add-filter-label">Zone</div>
                 <div class="ms-wrap" id="msw-zone-summary" style="width:100%">
                   <div class="ms-trigger" onclick="toggleMs('zone-summary')" style="width:100%;box-sizing:border-box"><i class="ti ti-map-pin ms-icon"></i><span class="ms-label" id="msl-zone-summary">All Zones</span><i class="ti ti-chevron-down ms-caret"></i></div>
@@ -1258,14 +1258,14 @@ tr:hover td:first-child,tr:hover td.col-grand{background:#f8fbff}
                   <div class="ms-dropdown" id="msd-owner-summary"></div>
                 </div>
               </div>
-              <div class="afp-divider"></div>
-              <div class="add-filter-row">
+              <div class="afp-divider" style="display:none"></div>
+              <div class="add-filter-row" style="display:none">
                 <div class="add-filter-label">Job Status</div>
                 <select class="add-filter-select" id="af-mbl-summary" onchange="renderSummary()">
                   <option value="">All</option><option value="Open">Open</option><option value="Ops Locked">Ops Locked</option><option value="Closed">Closed</option>
                 </select>
               </div>
-              <div class="add-filter-row">
+              <div class="add-filter-row" style="display:none">
                 <div class="add-filter-label">Customer</div>
                 <select class="add-filter-select" id="af-hbl-summary" onchange="renderSummary()">
                   <option value="">All</option>
@@ -1327,7 +1327,7 @@ tr:hover td:first-child,tr:hover td.col-grand{background:#f8fbff}
               <i class="ti ti-adjustments-horizontal" style="font-size:13px"></i> Filters
             </button>
             <div class="add-filters-panel" id="afp-open-jobs">
-              <div class="add-filter-row">
+              <div class="add-filter-row" style="display:none">
                 <div class="add-filter-label">Zone</div>
                 <div class="ms-wrap" id="msw-zone-open-jobs" style="width:100%">
                   <div class="ms-trigger" onclick="toggleMs('zone-open-jobs')" style="width:100%;box-sizing:border-box"><i class="ti ti-map-pin ms-icon"></i><span class="ms-label" id="msl-zone-open-jobs">All Zones</span><i class="ti ti-chevron-down ms-caret"></i></div>
@@ -1348,14 +1348,14 @@ tr:hover td:first-child,tr:hover td.col-grand{background:#f8fbff}
                   <div class="ms-dropdown" id="msd-owner-open-jobs"></div>
                 </div>
               </div>
-              <div class="afp-divider"></div>
-              <div class="add-filter-row">
+              <div class="afp-divider" style="display:none"></div>
+              <div class="add-filter-row" style="display:none">
                 <div class="add-filter-label">Job Status</div>
                 <select class="add-filter-select" id="af-mbl-open-jobs" onchange="renderPage('open-jobs')">
                   <option value="">All</option><option value="Open">Open</option><option value="Ops Locked">Ops Locked</option><option value="Closed">Closed</option>
                 </select>
               </div>
-              <div class="add-filter-row">
+              <div class="add-filter-row" style="display:none">
                 <div class="add-filter-label">Customer</div>
                 <select class="add-filter-select" id="af-hbl-open-jobs" onchange="renderPage('open-jobs')">
                   <option value="">All</option>
@@ -1450,7 +1450,7 @@ tr:hover td:first-child,tr:hover td.col-grand{background:#f8fbff}
               <i class="ti ti-adjustments-horizontal" style="font-size:13px"></i> Filters
             </button>
             <div class="add-filters-panel" id="afp-total-jobs">
-              <div class="add-filter-row">
+              <div class="add-filter-row" style="display:none">
                 <div class="add-filter-label">Zone</div>
                 <div class="ms-wrap" id="msw-zone-total-jobs" style="width:100%">
                   <div class="ms-trigger" onclick="toggleMs('zone-total-jobs')" style="width:100%;box-sizing:border-box"><i class="ti ti-map-pin ms-icon"></i><span class="ms-label" id="msl-zone-total-jobs">All Zones</span><i class="ti ti-chevron-down ms-caret"></i></div>
@@ -1471,14 +1471,14 @@ tr:hover td:first-child,tr:hover td.col-grand{background:#f8fbff}
                   <div class="ms-dropdown" id="msd-owner-total-jobs"></div>
                 </div>
               </div>
-              <div class="afp-divider"></div>
-              <div class="add-filter-row">
+              <div class="afp-divider" style="display:none"></div>
+              <div class="add-filter-row" style="display:none">
                 <div class="add-filter-label">Job Status</div>
                 <select class="add-filter-select" id="af-mbl-total-jobs" onchange="renderPage('total-jobs')">
                   <option value="">All</option><option value="Open">Open</option><option value="Ops Locked">Ops Locked</option><option value="Closed">Closed</option>
                 </select>
               </div>
-              <div class="add-filter-row">
+              <div class="add-filter-row" style="display:none">
                 <div class="add-filter-label">Customer</div>
                 <select class="add-filter-select" id="af-hbl-total-jobs" onchange="renderPage('total-jobs')">
                   <option value="">All</option>
@@ -1555,7 +1555,7 @@ tr:hover td:first-child,tr:hover td.col-grand{background:#f8fbff}
               <i class="ti ti-adjustments-horizontal" style="font-size:13px"></i> Filters
             </button>
             <div class="add-filters-panel" id="afp-unbilled-rev">
-              <div class="add-filter-row">
+              <div class="add-filter-row" style="display:none">
                 <div class="add-filter-label">Zone</div>
                 <div class="ms-wrap" id="msw-zone-unbilled-rev" style="width:100%">
                   <div class="ms-trigger" onclick="toggleMs('zone-unbilled-rev')" style="width:100%;box-sizing:border-box"><i class="ti ti-map-pin ms-icon"></i><span class="ms-label" id="msl-zone-unbilled-rev">All Zones</span><i class="ti ti-chevron-down ms-caret"></i></div>
@@ -1576,14 +1576,14 @@ tr:hover td:first-child,tr:hover td.col-grand{background:#f8fbff}
                   <div class="ms-dropdown" id="msd-owner-unbilled-rev"></div>
                 </div>
               </div>
-              <div class="afp-divider"></div>
-              <div class="add-filter-row">
+              <div class="afp-divider" style="display:none"></div>
+              <div class="add-filter-row" style="display:none">
                 <div class="add-filter-label">Job Status</div>
                 <select class="add-filter-select" id="af-mbl-unbilled-rev" onchange="renderPage('unbilled-rev')">
                   <option value="">All</option><option value="Open">Open</option><option value="Ops Locked">Ops Locked</option><option value="Closed">Closed</option>
                 </select>
               </div>
-              <div class="add-filter-row">
+              <div class="add-filter-row" style="display:none">
                 <div class="add-filter-label">Customer</div>
                 <select class="add-filter-select" id="af-hbl-unbilled-rev" onchange="renderPage('unbilled-rev')">
                   <option value="">All</option>
@@ -1675,7 +1675,7 @@ tr:hover td:first-child,tr:hover td.col-grand{background:#f8fbff}
               <i class="ti ti-adjustments-horizontal" style="font-size:13px"></i> Filters
             </button>
             <div class="add-filters-panel" id="afp-unposted-cost">
-              <div class="add-filter-row">
+              <div class="add-filter-row" style="display:none">
                 <div class="add-filter-label">Zone</div>
                 <div class="ms-wrap" id="msw-zone-unposted-cost" style="width:100%">
                   <div class="ms-trigger" onclick="toggleMs('zone-unposted-cost')" style="width:100%;box-sizing:border-box"><i class="ti ti-map-pin ms-icon"></i><span class="ms-label" id="msl-zone-unposted-cost">All Zones</span><i class="ti ti-chevron-down ms-caret"></i></div>
@@ -1696,14 +1696,14 @@ tr:hover td:first-child,tr:hover td.col-grand{background:#f8fbff}
                   <div class="ms-dropdown" id="msd-owner-unposted-cost"></div>
                 </div>
               </div>
-              <div class="afp-divider"></div>
-              <div class="add-filter-row">
+              <div class="afp-divider" style="display:none"></div>
+              <div class="add-filter-row" style="display:none">
                 <div class="add-filter-label">Job Status</div>
                 <select class="add-filter-select" id="af-mbl-unposted-cost" onchange="renderPage('unposted-cost')">
                   <option value="">All</option><option value="Open">Open</option><option value="Ops Locked">Ops Locked</option><option value="Closed">Closed</option>
                 </select>
               </div>
-              <div class="add-filter-row">
+              <div class="add-filter-row" style="display:none">
                 <div class="add-filter-label">Customer</div>
                 <select class="add-filter-select" id="af-hbl-unposted-cost" onchange="renderPage('unposted-cost')">
                   <option value="">All</option>
@@ -1817,7 +1817,7 @@ tr:hover td:first-child,tr:hover td.col-grand{background:#f8fbff}
               <i class="ti ti-adjustments-horizontal" style="font-size:13px"></i> Filters
             </button>
             <div class="add-filters-panel" id="afp-low-profit">
-              <div class="add-filter-row">
+              <div class="add-filter-row" style="display:none">
                 <div class="add-filter-label">Zone</div>
                 <div class="ms-wrap" id="msw-zone-low-profit" style="width:100%">
                   <div class="ms-trigger" onclick="toggleMs('zone-low-profit')" style="width:100%;box-sizing:border-box"><i class="ti ti-map-pin ms-icon"></i><span class="ms-label" id="msl-zone-low-profit">All Zones</span><i class="ti ti-chevron-down ms-caret"></i></div>
@@ -1838,14 +1838,14 @@ tr:hover td:first-child,tr:hover td.col-grand{background:#f8fbff}
                   <div class="ms-dropdown" id="msd-owner-low-profit"></div>
                 </div>
               </div>
-              <div class="afp-divider"></div>
-              <div class="add-filter-row">
+              <div class="afp-divider" style="display:none"></div>
+              <div class="add-filter-row" style="display:none">
                 <div class="add-filter-label">Job Status</div>
                 <select class="add-filter-select" id="af-mbl-low-profit" onchange="renderPage('low-profit')">
                   <option value="">All</option><option value="Open">Open</option><option value="Ops Locked">Ops Locked</option><option value="Closed">Closed</option>
                 </select>
               </div>
-              <div class="add-filter-row">
+              <div class="add-filter-row" style="display:none">
                 <div class="add-filter-label">Customer</div>
                 <select class="add-filter-select" id="af-hbl-low-profit" onchange="renderPage('low-profit')">
                   <option value="">All</option>
