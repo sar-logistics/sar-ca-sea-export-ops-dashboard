@@ -1974,7 +1974,7 @@ tr:hover td:first-child,tr:hover td.col-grand{background:#f8fbff}
       </table>
     </div>
     <div class="dv-footer">
-      <span id="dvCount" style="font-weight:600;color:#0f172a">0 shipments</span>
+      <span id="dvCount" style="font-weight:600;color:#0f172a">0 items</span>
       <span id="dvFiltered" style="display:none;color:#64748b">— filtered from <strong id="dvTotalCount">0</strong></span>
     </div>
   </div>
@@ -5908,7 +5908,7 @@ function updateDvFoot() {
 function updateDvCounts() {
   const total    = dvTabRecords.length;
   const filtered = dvFiltered.length;
-  document.getElementById('dvCount').textContent = filtered.toLocaleString() + ' shipments';
+  document.getElementById('dvCount').textContent = filtered.toLocaleString() + ' items';
   const hasFilter = dvCols.some(c => {
     const v = dvColFilters[c.key];
     return v === null || (v instanceof Set && v.size > 0);
