@@ -1221,9 +1221,9 @@ tr:hover td:first-child,tr:hover td.col-grand{background:#f8fbff}
               <option value="4">Q4 (Oct – Dec)</option>
             </select>
           </div>
-          <div id="fc-yearly-summary" style="display:none;align-items:center;gap:8px">
+          <div id="fc-yearly-summary" style="display:none;align-items:center;gap:8px;flex-shrink:0;white-space:nowrap">
             <span class="filter-label">Calendar Year</span>
-            <span id="fy-label-summary" style="font-size:12px;color:var(--text2);font-weight:500">Auto-detected</span>
+            <span id="fy-label-summary" style="font-size:12px;color:var(--text2);font-weight:500;white-space:nowrap;flex-shrink:0">Auto-detected</span>
           </div>
           <div id="fc-custom-summary" style="display:none;align-items:center;gap:8px">
             <span class="filter-label">From</span>
@@ -1311,9 +1311,9 @@ tr:hover td:first-child,tr:hover td.col-grand{background:#f8fbff}
               <option value="4">Q4 (Oct – Dec)</option>
             </select>
           </div>
-          <div id="fc-yearly-open-jobs" style="display:none;align-items:center;gap:8px">
+          <div id="fc-yearly-open-jobs" style="display:none;align-items:center;gap:8px;flex-shrink:0;white-space:nowrap">
             <span class="filter-label">Calendar Year</span>
-            <span id="fy-label-open-jobs" style="font-size:12px;color:var(--text2);font-weight:500">Auto-detected</span>
+            <span id="fy-label-open-jobs" style="font-size:12px;color:var(--text2);font-weight:500;white-space:nowrap;flex-shrink:0">Auto-detected</span>
           </div>
           <div id="fc-custom-open-jobs" style="display:none;align-items:center;gap:8px">
             <span class="filter-label">From</span>
@@ -1434,9 +1434,9 @@ tr:hover td:first-child,tr:hover td.col-grand{background:#f8fbff}
               <option value="4">Q4 (Oct – Dec)</option>
             </select>
           </div>
-          <div id="fc-yearly-total-jobs" style="display:none;align-items:center;gap:8px">
+          <div id="fc-yearly-total-jobs" style="display:none;align-items:center;gap:8px;flex-shrink:0;white-space:nowrap">
             <span class="filter-label">Calendar Year</span>
-            <span id="fy-label-total-jobs" style="font-size:12px;color:var(--text2);font-weight:500">Auto-detected</span>
+            <span id="fy-label-total-jobs" style="font-size:12px;color:var(--text2);font-weight:500;white-space:nowrap;flex-shrink:0">Auto-detected</span>
           </div>
           <div id="fc-custom-total-jobs" style="display:none;align-items:center;gap:8px">
             <span class="filter-label">From</span>
@@ -1539,9 +1539,9 @@ tr:hover td:first-child,tr:hover td.col-grand{background:#f8fbff}
               <option value="4">Q4 (Oct – Dec)</option>
             </select>
           </div>
-          <div id="fc-yearly-unbilled-rev" style="display:none;align-items:center;gap:8px">
+          <div id="fc-yearly-unbilled-rev" style="display:none;align-items:center;gap:8px;flex-shrink:0;white-space:nowrap">
             <span class="filter-label">Calendar Year</span>
-            <span id="fy-label-unbilled-rev" style="font-size:12px;color:var(--text2);font-weight:500">Auto-detected</span>
+            <span id="fy-label-unbilled-rev" style="font-size:12px;color:var(--text2);font-weight:500;white-space:nowrap;flex-shrink:0">Auto-detected</span>
           </div>
           <div id="fc-custom-unbilled-rev" style="display:none;align-items:center;gap:8px">
             <span class="filter-label">From</span>
@@ -1659,9 +1659,9 @@ tr:hover td:first-child,tr:hover td.col-grand{background:#f8fbff}
               <option value="4">Q4 (Oct – Dec)</option>
             </select>
           </div>
-          <div id="fc-yearly-unposted-cost" style="display:none;align-items:center;gap:8px">
+          <div id="fc-yearly-unposted-cost" style="display:none;align-items:center;gap:8px;flex-shrink:0;white-space:nowrap">
             <span class="filter-label">Calendar Year</span>
-            <span id="fy-label-unposted-cost" style="font-size:12px;color:var(--text2);font-weight:500">Auto-detected</span>
+            <span id="fy-label-unposted-cost" style="font-size:12px;color:var(--text2);font-weight:500;white-space:nowrap;flex-shrink:0">Auto-detected</span>
           </div>
           <div id="fc-custom-unposted-cost" style="display:none;align-items:center;gap:8px">
             <span class="filter-label">From</span>
@@ -1801,9 +1801,9 @@ tr:hover td:first-child,tr:hover td.col-grand{background:#f8fbff}
               <option value="4">Q4 (Oct – Dec)</option>
             </select>
           </div>
-          <div id="fc-yearly-low-profit" style="display:none;align-items:center;gap:8px">
+          <div id="fc-yearly-low-profit" style="display:none;align-items:center;gap:8px;flex-shrink:0;white-space:nowrap">
             <span class="filter-label">Calendar Year</span>
-            <span id="fy-label-low-profit" style="font-size:12px;color:var(--text2);font-weight:500">Auto-detected</span>
+            <span id="fy-label-low-profit" style="font-size:12px;color:var(--text2);font-weight:500;white-space:nowrap;flex-shrink:0">Auto-detected</span>
           </div>
           <div id="fc-custom-low-profit" style="display:none;align-items:center;gap:8px">
             <span class="filter-label">From</span>
@@ -3526,7 +3526,7 @@ function getDateRange(pageId) {
       from  = new Date(minD.getFullYear(), 0, 1);
       to    = new Date(maxD.getFullYear(), 11, 31, 23, 59, 59);
       label = 'CY ' + minD.getFullYear();
-      if (maxD.getFullYear() !== minD.getFullYear()) label += ' to CY ' + maxD.getFullYear();
+      if (maxD.getFullYear() !== minD.getFullYear()) label += ' – ' + maxD.getFullYear();   // e.g. "CY 2025 – 2026"
       const lbl = document.getElementById('fy-label-' + pageId);
       if (lbl) lbl.textContent = label;
     } else {
