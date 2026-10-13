@@ -1222,7 +1222,7 @@ tr:hover td:first-child,tr:hover td.col-grand{background:#f8fbff}
             </select>
           </div>
           <div id="fc-yearly-summary" style="display:none;align-items:center;gap:8px">
-            <span class="filter-label">Financial Year</span>
+            <span class="filter-label">Calendar Year</span>
             <span id="fy-label-summary" style="font-size:12px;color:var(--text2);font-weight:500">Auto-detected</span>
           </div>
           <div id="fc-custom-summary" style="display:none;align-items:center;gap:8px">
@@ -1312,7 +1312,7 @@ tr:hover td:first-child,tr:hover td.col-grand{background:#f8fbff}
             </select>
           </div>
           <div id="fc-yearly-open-jobs" style="display:none;align-items:center;gap:8px">
-            <span class="filter-label">Financial Year</span>
+            <span class="filter-label">Calendar Year</span>
             <span id="fy-label-open-jobs" style="font-size:12px;color:var(--text2);font-weight:500">Auto-detected</span>
           </div>
           <div id="fc-custom-open-jobs" style="display:none;align-items:center;gap:8px">
@@ -1435,7 +1435,7 @@ tr:hover td:first-child,tr:hover td.col-grand{background:#f8fbff}
             </select>
           </div>
           <div id="fc-yearly-total-jobs" style="display:none;align-items:center;gap:8px">
-            <span class="filter-label">Financial Year</span>
+            <span class="filter-label">Calendar Year</span>
             <span id="fy-label-total-jobs" style="font-size:12px;color:var(--text2);font-weight:500">Auto-detected</span>
           </div>
           <div id="fc-custom-total-jobs" style="display:none;align-items:center;gap:8px">
@@ -1540,7 +1540,7 @@ tr:hover td:first-child,tr:hover td.col-grand{background:#f8fbff}
             </select>
           </div>
           <div id="fc-yearly-unbilled-rev" style="display:none;align-items:center;gap:8px">
-            <span class="filter-label">Financial Year</span>
+            <span class="filter-label">Calendar Year</span>
             <span id="fy-label-unbilled-rev" style="font-size:12px;color:var(--text2);font-weight:500">Auto-detected</span>
           </div>
           <div id="fc-custom-unbilled-rev" style="display:none;align-items:center;gap:8px">
@@ -1660,7 +1660,7 @@ tr:hover td:first-child,tr:hover td.col-grand{background:#f8fbff}
             </select>
           </div>
           <div id="fc-yearly-unposted-cost" style="display:none;align-items:center;gap:8px">
-            <span class="filter-label">Financial Year</span>
+            <span class="filter-label">Calendar Year</span>
             <span id="fy-label-unposted-cost" style="font-size:12px;color:var(--text2);font-weight:500">Auto-detected</span>
           </div>
           <div id="fc-custom-unposted-cost" style="display:none;align-items:center;gap:8px">
@@ -1802,7 +1802,7 @@ tr:hover td:first-child,tr:hover td.col-grand{background:#f8fbff}
             </select>
           </div>
           <div id="fc-yearly-low-profit" style="display:none;align-items:center;gap:8px">
-            <span class="filter-label">Financial Year</span>
+            <span class="filter-label">Calendar Year</span>
             <span id="fy-label-low-profit" style="font-size:12px;color:var(--text2);font-weight:500">Auto-detected</span>
           </div>
           <div id="fc-custom-low-profit" style="display:none;align-items:center;gap:8px">
@@ -3504,7 +3504,7 @@ function getDateRange(pageId) {
     label = MONTHS[mo] + ' ' + yr;
   } else if (view === 'quarterly') {
     const qVal = Number(document.getElementById('quarter-' + pageId).value || 1);
-    // Span all data so all FY columns are shown
+    // Span all data so all calendar-year columns are shown
     const dates = allSRR.map(r => { if (r.jobDate !== undefined) { const p = r.periodDate || r.jobDate; return p ? new Date(p) : null; } const raw = r.direction === 'Import' ? (r.destinationEta || r.originEtd) : (r.originEtd || r.etdDate); return raw ? new Date(raw) : null; }).filter(d => d && d.getFullYear() > 2000);
     if (dates.length) {
       const minD = new Date(Math.min(...dates.map(d => d.getTime())));
@@ -3518,7 +3518,7 @@ function getDateRange(pageId) {
     const qNames = ['Q1 (Jan–Mar)','Q2 (Apr–Jun)','Q3 (Jul–Sep)','Q4 (Oct–Dec)'];
     label = qNames[qVal-1];
   } else if (view === 'yearly') {
-    // Auto-detect FY range from actual data
+    // Auto-detect calendar-year (CY) range from actual data
     const dates = allSRR.map(r => { if (r.jobDate !== undefined) { const p = r.periodDate || r.jobDate; return p ? new Date(p) : null; } const raw = r.direction === 'Import' ? (r.destinationEta || r.originEtd) : (r.originEtd || r.etdDate); return raw ? new Date(raw) : null; }).filter(d => d && d.getFullYear() > 2000);
     if (dates.length) {
       const minD = new Date(Math.min(...dates.map(d => d.getTime())));
@@ -3589,7 +3589,7 @@ function initFilters(pageId) {
 }
 
 
-// Hide scorecards and grand total for yearly/quarterly (multi-FY column views)
+// Hide scorecards and grand total for yearly/quarterly (multi-year column views)
 function showScorecards(view) { return view !== 'yearly' && view !== 'quarterly'; }
 function showGrandTotal(view)  { return view !== 'yearly' && view !== 'quarterly'; }
 
@@ -7936,14 +7936,14 @@ function buildSummaryChart(cols, totals, flags, report, view) {
         }
       } catch(e) {}
     } else if (isQuarterly) {
-      // e.g. "Q1 (Apr–Jun FY 2025-26)" — shorten to "Q1 Apr–Jun"
+      // Calendar quarters: Q1 = Jan–Mar … Q4 = Oct–Dec
       const m = c.label.match(/Q(\d)/);
-      const qNames = ['','Apr–Jun','Jul–Sep','Oct–Dec','Jan–Mar'];
+      const qNames = ['','Jan–Mar','Apr–Jun','Jul–Sep','Oct–Dec'];
       line1 = m ? `Q${m[1]} ${qNames[+m[1]]||''}` : c.label.slice(0, 12);
       tooltipLabel = c.label;
     } else if (isYearly) {
-      // e.g. "FY 2025-26 (APR 2025 - MAR 2026)" → "FY 2025-26"
-      const m = c.label.match(/FY\s*[\d\-]+/i);
+      // Calendar year, e.g. "CY 2025"
+      const m = c.label.match(/CY\s*\d{4}/i);
       line1 = m ? m[0] : c.label.slice(0, 12);
       tooltipLabel = c.label;
     } else if (isCustom) {
