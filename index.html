@@ -5892,14 +5892,22 @@ function renderDvBody() {
 function updateDvFoot() {
   const tfoot = document.getElementById('dvTfoot');
   const rows = dvFiltered;
-  // No summed totals in the footer, per request - only the unique-shipment-
-  // count label in the first cell, every other cell stays blank
+  // First cell: unique-shipment count. Every $ column: grand total of the rows
+  // currently shown (respects tab, column filters and search). Counts, TEU and % are not summed.
+  const isMoney = c => c.num && !c.plain && !c.pct && !c.date;
   tfoot.innerHTML = `<tr>${dvCols.map((c, i) => {
     if (i === 0) {
       const isWip = rows.length > 0 && (rows[0].chargeType !== undefined || rows[0].unbilledRevenue !== undefined || rows[0].unpostedCost !== undefined);
       const count = isWip ? new Set(rows.map(r => r.shipmentId)).size : rows.length;
       const label = isWip ? count + ' unique shipment' + (count !== 1 ? 's' : '') : count.toLocaleString();
       return `<td>TOTAL (${label})</td>`;
+    }
+    if (isMoney(c)) {
+      let sum = 0, any = false;
+      rows.forEach(r => { const v = parseFloat(r[c.key]); if (!isNaN(v)) { sum += v; any = true; } });
+      if (!any) return `<td></td>`;
+      const color = sum < 0 ? '#dc2626' : '#0f172a';
+      return `<td style="font-weight:700;color:${color};white-space:nowrap" title="Grand total of ${esc(c.label)}">${fmtIndian(sum)}</td>`;
     }
     return `<td></td>`;
   }).join('')}</tr>`;
