@@ -2058,9 +2058,14 @@ let rawEvaJobs = [];   // ALL estimatedvsactual jobs, built only from estimatedv
 function caFmtWhen(iso) {
   const d = iso ? new Date(iso) : null;
   if (!d || isNaN(d)) return '';
-  // Always shown in India time, labelled IST (same for every viewer)
-  return d.toLocaleString('en-GB', { timeZone:'Asia/Kolkata', day:'numeric', month:'short', year:'numeric',
-                                     hour:'numeric', minute:'2-digit', hour12:true }) + ' IST';
+  // Always shown in Canadian Eastern time (Mississauga / Toronto), labelled EDT or EST
+  // depending on daylight saving — the same for every viewer
+  const TZ = 'America/Toronto';
+  const when = d.toLocaleString('en-GB', { timeZone: TZ, day:'numeric', month:'short', year:'numeric',
+                                           hour:'numeric', minute:'2-digit', hour12:true });
+  const abbr = (new Intl.DateTimeFormat('en-US', { timeZone: TZ, timeZoneName:'short' })
+                  .formatToParts(d).find(p => p.type === 'timeZoneName') || {}).value || 'ET';
+  return when + ' ' + abbr;
 }
 function caRenderDataRefreshed(info) {
   const box = document.getElementById('tb-data-refreshed'), val = document.getElementById('tb-data-refreshed-val');
