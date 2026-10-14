@@ -60,7 +60,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text1);font-size:1
 .tb-title-wrap{display:flex;flex-direction:column;justify-content:center}
 .tb-title{font-size:15px;font-weight:700;color:#fff;line-height:1.2;letter-spacing:.01em;text-shadow:0 1px 2px rgba(0,0,0,.25)}
 .tb-subtitle{font-size:11px;color:#93c5fd;line-height:1.2;font-weight:500;letter-spacing:.02em}
-.tb-lob-pill{display:flex;align-items:center;gap:7px;margin-left:14px;padding:6px 14px;border-radius:999px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.28);color:#fff;font-size:13px;font-weight:700;letter-spacing:.02em;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.tb-lob-pill{display:flex;align-items:center;gap:7px;margin-right:10px;padding:7px 15px;border-radius:999px;background:#1F3A6E;border:1px solid #1F3A6E;color:#fff;font-size:13px;font-weight:700;letter-spacing:.02em;white-space:nowrap;flex-shrink:0;box-shadow:0 2px 6px rgba(31,58,110,.25)}
 .tb-lob-pill i{font-size:15px;opacity:.9}
 .tb-lob-pill.export i{transform:rotate(0deg)}
 .tb-spacer{flex:1}
@@ -1109,12 +1109,12 @@ tr:hover td:first-child,tr:hover td.col-grand{background:#f8fbff}
         <div class="tb-title">SAR Logistics · Canada</div>
         <div class="tb-subtitle">Sea Ops</div>
       </div>
-      <!-- Current LOB, shown once Sea Export / Sea Import is opened -->
-      <div id="tb-lob-pill" class="tb-lob-pill" style="display:none">
-        <i class="ti ti-anchor"></i><span id="tb-lob-pill-text">Sea Export</span>
-      </div>
     </div>
     <div class="tb-divider"></div>
+    <!-- Current LOB (top-left), shown once Sea Export / Sea Import is opened -->
+    <div id="tb-lob-pill" class="tb-lob-pill" style="display:none">
+      <i class="ti ti-anchor"></i><span id="tb-lob-pill-text">Sea Export</span>
+    </div>
     <div id="tb-filter-row" style="display:flex;align-items:center;gap:8px;flex:1"><!-- filters injected here --></div>
     <div class="tb-spacer"></div>
     <div id="tb-data-refreshed" class="tb-refreshed" title="Last time data was pushed from the CY sheets">
