@@ -2731,15 +2731,26 @@ function updateTopbarLabel() {
   if (label && currentLob) {
     label.textContent = lobNames[currentLob] + ' · ' + currentDirection;
   }
-  // Top-left pill: "Sea Export" / "Sea Import" once a direction has been opened
-  const pill = document.getElementById('tb-lob-pill'), txt = document.getElementById('tb-lob-pill-text');
-  const opened = document.getElementById('lob-nav-zone')?.classList.contains('hidden-collapsed');
-  if (pill && txt) {
-    const names = {sea:'Sea', air:'Air', road:'Road'};
-    txt.textContent = (names[currentLob] || 'Sea') + ' ' + (currentDirection || '');
-    pill.style.display = (currentLob && opened) ? 'flex' : 'none';
-  }
+  caSyncLobPill();
 }
+
+// Top-left pill: "Sea Export" / "Sea Import" — only while a report is open.
+// The report view is open when the sidebar's LOB menu is collapsed into the icon rail;
+// going back to the landing screen re-expands it, which hides the pill again.
+function caSyncLobPill() {
+  const pill = document.getElementById('tb-lob-pill'), txt = document.getElementById('tb-lob-pill-text');
+  if (!pill || !txt) return;
+  const inReport = !!document.getElementById('lob-nav-zone')?.classList.contains('hidden-collapsed');
+  const names = {sea:'Sea', air:'Air', road:'Road'};
+  txt.textContent = (names[currentLob] || 'Sea') + ' ' + (currentDirection || '');
+  pill.style.display = (currentLob && inReport) ? 'flex' : 'none';
+}
+// Re-check whenever the report view is entered or exited (any path: Sea row, icon rail, etc.)
+document.addEventListener('DOMContentLoaded', () => {
+  const navZone = document.getElementById('lob-nav-zone');
+  if (navZone) new MutationObserver(caSyncLobPill).observe(navZone, { attributes: true, attributeFilter: ['class'] });
+  caSyncLobPill();
+});
 
 let currentDirection = 'Export'; // 'Export' or 'Import'
  
