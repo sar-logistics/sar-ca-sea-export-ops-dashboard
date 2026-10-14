@@ -11,7 +11,7 @@ import { MongoClient } from 'mongodb';
 const uri    = process.env.MONGO_URI;
 const SECRET = process.env.BATCH_SECRET;
 const DB     = process.env.MONGO_DB || undefined;   // undefined → database in the URI (sar-ca-ops)
-const COLS   = { Export: 'ca_ops_export', Import: 'ca_ops_import' };
+const COLS   = { Export: 'ca_ops_export', Import: 'ca_ops_import', General: 'ca_ops_general' };   // General = LOB GEN
 const EXTRA_COLLECTIONS = new Set(['estimatedvsactual']);   // writable by name via POST
 const TTL_MS = 15 * 60 * 1000;                       // 15 min (Refresh button bypasses it)
 
@@ -46,7 +46,7 @@ const EVA_COLLECTION = 'estimatedvsactual';
 const toNum = v => { const n = typeof v === 'number' ? v : parseFloat(String(v ?? '').replace(/[,\s]/g, '')); return isNaN(n) ? 0 : n; };
 const round2 = n => Math.round(n * 100) / 100;
 
-const evaDirection = lob => { const u = String(lob || '').toUpperCase(); return /EXP/.test(u) ? 'Export' : /IMP/.test(u) ? 'Import' : ''; };
+const evaDirection = lob => { const u = String(lob || '').toUpperCase(); return /^GEN/.test(u) ? 'General' : /EXP/.test(u) ? 'Export' : /IMP/.test(u) ? 'Import' : ''; };
 
 function sumEvaByJob(evaRows) {
   const byJob = new Map();
@@ -96,7 +96,7 @@ function applyEvaAmounts(records, byJob) {
   for (const [job, t] of byJob) {
     if (seen.has(job) || (!t.revLines && !t.costLines) || !t.direction) continue;
     evaOnly.push({
-      shipmentId: job, direction: t.direction, lob: t.lob2 || ('SEA ' + t.direction.toUpperCase()),
+      shipmentId: job, direction: t.direction, lob: t.lob2 || (t.direction === 'General' ? 'GEN' : 'SEA ' + t.direction.toUpperCase()),
       jobDate: t.jobDate, periodDate: t.etdEta || t.jobDate, branch: t.location, location: t.location,
       customer: '', organization: t.organization, salesPerson: t.salesPerson, jobOwner: '', jobStatus: '', sourceYear: t.sourceYear,
       unbilledRevenue: round2(t.unbilledRevenue), unpostedCost: round2(t.unbilledCost),
@@ -113,9 +113,11 @@ function evaJobSummaries(byJob) {
   for (const [job, t] of byJob) {
     if (!t.direction) continue;
     out.push({
-      shipmentId: job, direction: t.direction, lob: t.lob2 || ('SEA ' + t.direction.toUpperCase()),
+      shipmentId: job, direction: t.direction, lob: t.lob2 || (t.direction === 'General' ? 'GEN' : 'SEA ' + t.direction.toUpperCase()),
       // Same as USA: period = ETD/ETA New (3-step fallback column), else ETD/ETA, else Job Date
-      jobDate: t.jobDate, periodDate: t.etdEtaNew || t.etdEta || t.jobDate, etdEtaNew: t.etdEtaNew, etdEta: t.etdEta, ataAtd: t.ataAtd,
+      // General jobs are dated by Job Date; Export / Import by ETD/ETA New › ETD/ETA › Job Date
+      jobDate: t.jobDate, periodDate: t.direction === 'General' ? (t.jobDate || t.etdEtaNew || t.etdEta) : (t.etdEtaNew || t.etdEta || t.jobDate),
+      etdEtaNew: t.etdEtaNew, etdEta: t.etdEta, ataAtd: t.ataAtd,
       branch: t.location || '(No Branch)', location: t.location, jobOwner: t.jobOwner || t.salesPerson, salesPerson: t.salesPerson,
       operationLockDate: t.operationLockDate,
       organization: t.organization, sourceYear: t.sourceYear,
@@ -132,12 +134,13 @@ async function buildCache(db) {
   console.log('[CA-OPS] Building cache...');
   const expDocs  = await db.collection(COLS.Export).find({}).toArray();
   const impDocs  = await db.collection(COLS.Import).find({}).toArray();
+  const genDocs  = await db.collection(COLS.General).find({}).toArray();   // General jobs (LOB GEN), dated by Job Date
   const userDocs = await db.collection('users').find({}).toArray();
   const evaRows  = await db.collection(EVA_COLLECTION)
     .find({}, { projection: { _id: 0, jobNo: 1, unbilledRevenue: 1, unbilledCost: 1, unpostedCost: 1, lob: 1, lob2: 1, direction: 1,
                                etdEtaNew: 1, etdEta: 1, ataAtd: 1, jobDate: 1, location: 1, jobOwner: 1, operationLockDate: 1,
                                organization: 1, salesPerson: 1, sourceYear: 1 } }).toArray();
-  const all      = [...expDocs, ...impDocs];
+  const all      = [...expDocs, ...impDocs, ...genDocs];
   // Last time each data set was pushed from the sheets (syncedAt is stamped by the Apps Script pushes)
   const maxIso   = arr => arr.reduce((m, d) => (d && d.syncedAt && String(d.syncedAt) > m ? String(d.syncedAt) : m), '');
   const evaLast  = await db.collection(EVA_COLLECTION).find({ syncedAt: { $exists: true } }, { projection: { _id: 0, syncedAt: 1 } })
@@ -147,7 +150,7 @@ async function buildCache(db) {
   const evaJobs  = evaJobSummaries(evaByJob);
   const amounts  = applyEvaAmounts(all, evaByJob);
   const records  = all.map(compact);
-  console.log(`[CA-OPS] Export: ${expDocs.length}, Import: ${impDocs.length}, users: ${userDocs.length}, ` +
+  console.log(`[CA-OPS] Export: ${expDocs.length}, Import: ${impDocs.length}, General: ${genDocs.length}, users: ${userDocs.length}, ` +
     `amounts from ${amounts.source} (${evaRows.length} charge lines, ${amounts.matched} jobs matched, ${amounts.evaOnly.length} only in ${EVA_COLLECTION})`);
   cache = {
     payload: { records, users: userDocs, amountsSource: amounts.source, evaJobsMatched: amounts.matched,
