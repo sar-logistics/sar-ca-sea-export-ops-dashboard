@@ -1009,6 +1009,7 @@ tr:hover td:first-child,tr:hover td.col-grand{background:#f8fbff}
       <div class="lob-icon-rail" id="lob-icon-rail">
         <div class="rail-btn active" id="rail-sea" onclick="railExpand()" title="Sea"><i class="ti ti-anchor"></i></div>
         <div class="rail-btn" id="rail-air" onclick="railExpand()" title="Air"><i class="ti ti-plane"></i></div>
+        <div class="rail-btn" id="rail-gen" onclick="railExpand()" title="General Jobs"><i class="ti ti-briefcase"></i></div>
       </div>
       <div class="sidebar-main-col">
       <!-- LOB Navigation — Accordion List -->
@@ -2482,8 +2483,10 @@ function matchesCurrentLob(r) {
 }
 
 function updateRailActive() {
-  ['sea','air','road'].forEach(l => {
-    document.getElementById('rail-' + l)?.classList.toggle('active', l === currentLob);
+  // General Jobs runs on the sea pipeline internally, so highlight it by direction
+  const activeKey = String(currentDirection || '').toLowerCase() === 'general' ? 'gen' : currentLob;
+  ['sea','air','road','gen'].forEach(l => {
+    document.getElementById('rail-' + l)?.classList.toggle('active', l === activeKey);
   });
 }
 
@@ -2619,7 +2622,7 @@ function setDirection(dir) {
   // plane/truck) travels from its spot in the expanded row into its spot
   // in the collapsed icon rail, instead of one disappearing while a
   // separate one appears in the rail.
-  const lobForFlip = currentLob;
+  const lobForFlip = dir === 'General' ? 'gen' : currentLob;   // General Jobs flies its own briefcase icon
   const sourceBadge = document.querySelector('#lob-row-' + lobForFlip + ' .lob-row-icon-badge');
   const fromRect = sourceBadge ? sourceBadge.getBoundingClientRect() : null;
 
@@ -2632,6 +2635,7 @@ function setDirection(dir) {
   // Rail becomes display:flex immediately above (opacity fades in separately),
   // so its layout is already measurable here even before the fade finishes
   flipLobIconToRail(lobForFlip, fromRect);
+  updateRailActive();
 
   // Fade the landing illustration out smoothly, then reveal the report page
   // content once the fade completes, instead of an instant hard swap. The
