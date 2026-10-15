@@ -1014,7 +1014,7 @@ tr:hover td:first-child,tr:hover td.col-grand{background:#f8fbff}
       <div class="lob-icon-rail" id="lob-icon-rail">
         <div class="rail-btn active" id="rail-sea" onclick="railExpand()" title="Sea"><i class="ti ti-anchor"></i></div>
         <div class="rail-btn" id="rail-air" onclick="railExpand()" title="Air"><i class="ti ti-plane"></i></div>
-        <div class="rail-btn" id="rail-gen" onclick="railExpand()" title="General Jobs"><i class="ti ti-briefcase"></i></div>
+        <div class="rail-btn" id="rail-gen" onclick="railExpand()" title="General Jobs"><i class="ti ti-package"></i></div>
       </div>
       <div class="sidebar-main-col">
       <!-- LOB Navigation — Accordion List -->
@@ -1066,7 +1066,7 @@ tr:hover td:first-child,tr:hover td.col-grand{background:#f8fbff}
           <div class="lob-row" id="lob-row-gen" data-lob="gen">
             <div class="lob-row-head" onclick="openGeneralJobs()">
               <div class="lob-row-illus"></div>
-              <div class="lob-row-icon-badge"><i class="ti ti-briefcase"></i></div>
+              <div class="lob-row-icon-badge"><i class="ti ti-package"></i></div>
               <div class="lob-row-name" style="flex:1">General Jobs</div>
               <i class="ti ti-chevron-right" style="font-size:14px;color:rgba(255,255,255,.55);position:relative;z-index:1"></i>
             </div>
@@ -2839,7 +2839,7 @@ function caSyncLobPill() {
   const names = {sea:'Sea', air:'Air', road:'Road'};
   const isGen = String(currentDirection || '').toLowerCase() === 'general';
   txt.textContent = isGen ? 'General Jobs' : (names[currentLob] || 'Sea') + ' ' + (currentDirection || '');
-  const ic = pill.querySelector('i'); if (ic) ic.className = isGen ? 'ti ti-briefcase' : currentLob === 'air' ? 'ti ti-plane' : 'ti ti-anchor';
+  const ic = pill.querySelector('i'); if (ic) ic.className = isGen ? 'ti ti-package' : currentLob === 'air' ? 'ti ti-plane' : 'ti ti-anchor';
   pill.style.display = (currentLob && inReport) ? 'flex' : 'none';
 }
 // Re-check whenever the report view is entered or exited (any path: Sea row, icon rail, etc.)
