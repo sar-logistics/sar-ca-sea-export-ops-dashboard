@@ -1069,12 +1069,18 @@ tr:hover td:first-child,tr:hover td.col-grand{background:#f8fbff}
 
           <!-- General Jobs (LOB = GEN) — opens straight into the reports, dated by Job Date -->
           <div class="lob-row" id="lob-row-gen" data-lob="gen">
-            <div class="lob-row-head" onclick="openGeneralJobs()">
+            <div class="lob-row-head" onclick="toggleLobRow('gen')">
               <div class="lob-row-illus"></div>
               <div class="lob-row-icon-badge"><i class="ti ti-package"></i></div>
-              <div class="lob-row-name" style="flex:1">General Jobs</div>
-              <i class="ti ti-chevron-right" style="font-size:14px;color:rgba(255,255,255,.55);position:relative;z-index:1"></i>
+              <div class="lob-row-name" style="flex:1">General</div>
+              <i class="ti ti-chevron-down lob-row-chev"></i>
             </div>
+            <div class="lob-sub-wrap"><div class="lob-sub-inner">
+              <div class="lob-sub-item" id="dir-sub-gen" onclick="event.stopPropagation();openGeneralJobs()">
+                <div class="lob-sub-name" style="flex:1">General</div>
+                <i class="ti ti-chevron-down" style="font-size:13px;color:rgba(255,255,255,.4)"></i>
+              </div>
+            </div></div>
           </div>
 
         </div>
@@ -2631,7 +2637,7 @@ function toggleLobRow(lob) {
   hideTopbarFilters();
 
   // Close all rows, open the clicked one (accordion behavior)
-  ['sea','air','road','wh'].forEach(l => {
+  ['sea','air','road','wh','gen'].forEach(l => {
     document.getElementById('lob-row-' + l)?.classList.toggle('active', l === lob);
   });
 
@@ -2662,6 +2668,7 @@ function openGeneralJobs() {
 function setDirection(dir) {
   currentDirection = dir;
   document.getElementById('lob-row-gen')?.classList.toggle('active', dir === 'General');
+  document.getElementById('dir-sub-gen')?.classList.toggle('active', dir === 'General');
 
   // Update sub-item active states for whichever LOB is currently open
   const idPrefix = currentLob === 'air' ? 'dir-sub-air-' : currentLob === 'road' ? 'dir-sub-road-' : 'dir-sub-';
@@ -2826,7 +2833,7 @@ function updateDirCounts() {
 }
 
 function updateTopbarLabel() {
-  const lobNames = {sea:'Sea Ops', air:'Air Ops', road:'Roadways', wh:'Warehousing'};
+  const lobNames = {sea:'Sea Ops', air:'Air Ops', road:'Roadways', wh:'Warehousing', gen:'General'};
   const label = document.getElementById('tb-direction-label') || document.querySelector('.tb-subtitle');
   if (label && currentLob) {
     label.textContent = currentDirection === 'General' ? 'General Jobs' : lobNames[currentLob] + ' · ' + currentDirection;
