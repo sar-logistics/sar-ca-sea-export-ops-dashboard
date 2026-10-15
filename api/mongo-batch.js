@@ -13,6 +13,7 @@ const SECRET = process.env.BATCH_SECRET;
 const DB     = process.env.MONGO_DB || undefined;   // undefined → database in the URI (sar-ca-ops)
 const COLS   = { Export: 'ca_ops_export', Import: 'ca_ops_import',                  // SEA EXPORT / SEA IMPORT
                  AirExport: 'ca_ops_air_export', AirImport: 'ca_ops_air_import',     // AIR EXPORT / AIR IMPORT
+                 RoadExport: 'ca_ops_road_export',                                   // ROAD EXPORT
                  General: 'ca_ops_general' };                                        // GEN
 const EXTRA_COLLECTIONS = new Set(['estimatedvsactual']);   // writable by name via POST
 const TTL_MS = 15 * 60 * 1000;                       // 15 min (Refresh button bypasses it)
@@ -139,12 +140,13 @@ async function buildCache(db) {
   const genDocs  = await db.collection(COLS.General).find({}).toArray();   // General jobs (LOB GEN), dated by Job Date
   const airExp   = await db.collection(COLS.AirExport).find({}).toArray(); // Air jobs keep direction Export / Import,
   const airImp   = await db.collection(COLS.AirImport).find({}).toArray(); // the dashboard separates them by LOB
+  const roadExp  = await db.collection(COLS.RoadExport).find({}).toArray(); // ROAD EXPORT (direction Export)
   const userDocs = await db.collection('users').find({}).toArray();
   const evaRows  = await db.collection(EVA_COLLECTION)
     .find({}, { projection: { _id: 0, jobNo: 1, unbilledRevenue: 1, unbilledCost: 1, unpostedCost: 1, lob: 1, lob2: 1, direction: 1,
                                etdEtaNew: 1, etdEta: 1, ataAtd: 1, jobDate: 1, location: 1, jobOwner: 1, operationLockDate: 1,
                                organization: 1, salesPerson: 1, sourceYear: 1 } }).toArray();
-  const all      = [...expDocs, ...impDocs, ...airExp, ...airImp, ...genDocs];
+  const all      = [...expDocs, ...impDocs, ...airExp, ...airImp, ...roadExp, ...genDocs];
   // Last time each data set was pushed from the sheets (syncedAt is stamped by the Apps Script pushes)
   const maxIso   = arr => arr.reduce((m, d) => (d && d.syncedAt && String(d.syncedAt) > m ? String(d.syncedAt) : m), '');
   const evaLast  = await db.collection(EVA_COLLECTION).find({ syncedAt: { $exists: true } }, { projection: { _id: 0, syncedAt: 1 } })
@@ -154,7 +156,7 @@ async function buildCache(db) {
   const evaJobs  = evaJobSummaries(evaByJob);
   const amounts  = applyEvaAmounts(all, evaByJob);
   const records  = all.map(compact);
-  console.log(`[CA-OPS] Export: ${expDocs.length}, Import: ${impDocs.length}, Air: ${airExp.length}/${airImp.length}, General: ${genDocs.length}, users: ${userDocs.length}, ` +
+  console.log(`[CA-OPS] Export: ${expDocs.length}, Import: ${impDocs.length}, Air: ${airExp.length}/${airImp.length}, Road: ${roadExp.length}, General: ${genDocs.length}, users: ${userDocs.length}, ` +
     `amounts from ${amounts.source} (${evaRows.length} charge lines, ${amounts.matched} jobs matched, ${amounts.evaOnly.length} only in ${EVA_COLLECTION})`);
   cache = {
     payload: { records, users: userDocs, amountsSource: amounts.source, evaJobsMatched: amounts.matched,
