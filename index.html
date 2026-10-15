@@ -1313,6 +1313,12 @@ tr:hover td:first-child,tr:hover td.col-grand{background:#f8fbff}
                   <option value="">All</option>
                 </select>
               </div>
+              <div class="add-filter-row">
+                <div class="add-filter-label">Operation Lock</div>
+                <select class="add-filter-select" id="af-olk-summary" onchange="renderSummary()">
+                  <option value="">All</option><option value="done">Done</option><option value="notdone">Not Done</option>
+                </select>
+              </div>
             </div>
           </div>
           <button class="dv-btn" onclick="refreshData('summary')" style="display:inline-flex;align-items:center;gap:5px"><i class="ti ti-refresh" style="font-size:13px"></i> Refresh</button>
@@ -1401,6 +1407,12 @@ tr:hover td:first-child,tr:hover td.col-grand{background:#f8fbff}
                 <div class="add-filter-label">Customer</div>
                 <select class="add-filter-select" id="af-hbl-open-jobs" onchange="renderPage('open-jobs')">
                   <option value="">All</option>
+                </select>
+              </div>
+              <div class="add-filter-row">
+                <div class="add-filter-label">Operation Lock</div>
+                <select class="add-filter-select" id="af-olk-open-jobs" onchange="renderPage('open-jobs')">
+                  <option value="">All</option><option value="done">Done</option><option value="notdone">Not Done</option>
                 </select>
               </div>
             </div>
@@ -1526,6 +1538,12 @@ tr:hover td:first-child,tr:hover td.col-grand{background:#f8fbff}
                   <option value="">All</option>
                 </select>
               </div>
+              <div class="add-filter-row">
+                <div class="add-filter-label">Operation Lock</div>
+                <select class="add-filter-select" id="af-olk-total-jobs" onchange="renderPage('total-jobs')">
+                  <option value="">All</option><option value="done">Done</option><option value="notdone">Not Done</option>
+                </select>
+              </div>
             </div>
           </div>
           <button class="dv-btn" onclick="refreshData('total-jobs')" style="display:inline-flex;align-items:center;gap:5px"><i class="ti ti-refresh" style="font-size:13px"></i> Refresh</button>
@@ -1629,6 +1647,12 @@ tr:hover td:first-child,tr:hover td.col-grand{background:#f8fbff}
                 <div class="add-filter-label">Customer</div>
                 <select class="add-filter-select" id="af-hbl-unbilled-rev" onchange="renderPage('unbilled-rev')">
                   <option value="">All</option>
+                </select>
+              </div>
+              <div class="add-filter-row">
+                <div class="add-filter-label">Operation Lock</div>
+                <select class="add-filter-select" id="af-olk-unbilled-rev" onchange="renderPage('unbilled-rev')">
+                  <option value="">All</option><option value="done">Done</option><option value="notdone">Not Done</option>
                 </select>
               </div>
             </div>
@@ -1749,6 +1773,12 @@ tr:hover td:first-child,tr:hover td.col-grand{background:#f8fbff}
                 <div class="add-filter-label">Customer</div>
                 <select class="add-filter-select" id="af-hbl-unposted-cost" onchange="renderPage('unposted-cost')">
                   <option value="">All</option>
+                </select>
+              </div>
+              <div class="add-filter-row">
+                <div class="add-filter-label">Operation Lock</div>
+                <select class="add-filter-select" id="af-olk-unposted-cost" onchange="renderPage('unposted-cost')">
+                  <option value="">All</option><option value="done">Done</option><option value="notdone">Not Done</option>
                 </select>
               </div>
             </div>
@@ -1891,6 +1921,12 @@ tr:hover td:first-child,tr:hover td.col-grand{background:#f8fbff}
                 <div class="add-filter-label">Customer</div>
                 <select class="add-filter-select" id="af-hbl-low-profit" onchange="renderPage('low-profit')">
                   <option value="">All</option>
+                </select>
+              </div>
+              <div class="add-filter-row">
+                <div class="add-filter-label">Operation Lock</div>
+                <select class="add-filter-select" id="af-olk-low-profit" onchange="renderPage('low-profit')">
+                  <option value="">All</option><option value="done">Done</option><option value="notdone">Not Done</option>
                 </select>
               </div>
             </div>
@@ -2130,6 +2166,11 @@ function caRecords(data) {
     });
   }
   return [];
+}
+// Operation Lock is "Done" when the job has an Operation Lock date, "Not Done" when it is blank
+function caOpsLockDone(r) {
+  const v = r.operationLock !== undefined && r.operationLock !== '' ? r.operationLock : r.operationLockDate;
+  return !(v === undefined || v === null || String(v).trim() === '');
 }
 function nzAmt(v) { return Math.abs(Number(v) || 0) > 0.005; }
 function caIsOpen(r) {
@@ -3284,7 +3325,7 @@ function syncUniversalFilters(oldSuffix, newSuffix) {
   });
 
   // Add Filters panel: MBL Type / HBL Type plain selects
-  ['af-mbl-', 'af-hbl-'].forEach(prefix => {
+  ['af-mbl-', 'af-hbl-', 'af-olk-'].forEach(prefix => {
     const oldEl = document.getElementById(prefix + oldSuffix);
     const newEl = document.getElementById(prefix + newSuffix);
     if (oldEl && newEl) newEl.value = oldEl.value;
@@ -4848,10 +4889,11 @@ document.addEventListener('click', e => {
       const pageId = b.id.replace('afb-', '');
       const mbl  = document.getElementById('af-mbl-' + pageId)?.value || '';
       const hbl  = document.getElementById('af-hbl-' + pageId)?.value || '';
+      const olk  = document.getElementById('af-olk-' + pageId)?.value || '';
       const zone = msState['zone-'   + pageId]?.size > 0;
       const br   = msState['branch-' + pageId]?.size > 0;
       const own  = msState['owner-'  + pageId]?.size > 0;
-      b.classList.toggle('active', !!(mbl || hbl || zone || br || own));
+      b.classList.toggle('active', !!(mbl || hbl || olk || zone || br || own));
     });
   }
 });
@@ -4862,10 +4904,18 @@ function applyAdditionalFilters(data, pageId) {
   const hblEl = document.getElementById('af-hbl-' + pageId);
   const mblVal = mblEl ? mblEl.value : '';
   const hblVal = hblEl ? hblEl.value : '';
+  const olkEl  = document.getElementById('af-olk-' + pageId);
+  const olkVal = olkEl ? olkEl.value : '';   // Operation Lock: '' | 'done' | 'notdone'
 
-  if (!mblVal && !hblVal) return data;
+  if (!mblVal && !hblVal && !olkVal) return data;
 
   return data.filter(r => {
+    // Operation Lock filter: Done = an Operation Lock date is present, Not Done = blank
+    if (olkVal) {
+      const done = caOpsLockDone(r);
+      if (olkVal === 'done' && !done) return false;
+      if (olkVal === 'notdone' && done) return false;
+    }
     // MBL filter
     if (mblVal) {
       const rMbl = (r.jobStatus || '').trim();   // Job Status
