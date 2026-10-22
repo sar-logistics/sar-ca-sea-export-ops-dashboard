@@ -122,6 +122,15 @@ body{font-family:var(--font);background:var(--bg);color:var(--text1);font-size:1
 .tb-refreshed.stale{background:#FFF7ED;border-color:#FDBA74}
 .tb-refreshed.stale b{color:#C2410C}
 @media (max-width:900px){.tb-refreshed span{display:none}}
+.olk-row .olk-label{color:#1e293b !important;letter-spacing:.12em}
+.olk-switch{display:flex;align-items:center;gap:12px;cursor:pointer;user-select:none;padding:2px 0}
+.olk-switch input{position:absolute;opacity:0;width:0;height:0}
+.olk-slider{position:relative;flex-shrink:0;width:44px;height:24px;border-radius:999px;background:#E2E8F0;border:1px solid #CBD5E1;transition:background .2s,border-color .2s}
+.olk-slider::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(15,23,42,.25);transition:transform .2s}
+.olk-switch input:checked + .olk-slider{background:#1F3A6E;border-color:#1F3A6E}
+.olk-switch input:checked + .olk-slider::after{transform:translateX(20px)}
+.olk-switch input:focus-visible + .olk-slider{outline:2px solid #93C5FD;outline-offset:2px}
+.olk-text{font-size:13px;color:#475569}
 .ca-cur-btn{flex:1;border:0;background:transparent;color:var(--text2);font:inherit;font-size:12px;font-weight:600;padding:6px 0;border-radius:7px;cursor:pointer;transition:background .15s,color .15s}
 .ca-cur-btn:hover{background:#E5EDF7}
 .ca-cur-btn.active{background:#1F3A6E;color:#fff}
@@ -1351,12 +1360,6 @@ tr:hover td:first-child,tr:hover td.col-grand{background:#f8fbff}
                   <option value="">All</option>
                 </select>
               </div>
-              <div class="add-filter-row">
-                <div class="add-filter-label">Operation Lock</div>
-                <select class="add-filter-select" id="af-olk-summary" onchange="renderSummary()">
-                  <option value="">All</option><option value="done">Done</option><option value="notdone">Not Done</option>
-                </select>
-              </div>
             </div>
           </div>
           <button class="dv-btn" onclick="refreshData('summary')" style="display:inline-flex;align-items:center;gap:5px"><i class="ti ti-refresh" style="font-size:13px"></i> Refresh</button>
@@ -1445,12 +1448,6 @@ tr:hover td:first-child,tr:hover td.col-grand{background:#f8fbff}
                 <div class="add-filter-label">Customer</div>
                 <select class="add-filter-select" id="af-hbl-open-jobs" onchange="renderPage('open-jobs')">
                   <option value="">All</option>
-                </select>
-              </div>
-              <div class="add-filter-row">
-                <div class="add-filter-label">Operation Lock</div>
-                <select class="add-filter-select" id="af-olk-open-jobs" onchange="renderPage('open-jobs')">
-                  <option value="">All</option><option value="done">Done</option><option value="notdone">Not Done</option>
                 </select>
               </div>
             </div>
@@ -1576,12 +1573,6 @@ tr:hover td:first-child,tr:hover td.col-grand{background:#f8fbff}
                   <option value="">All</option>
                 </select>
               </div>
-              <div class="add-filter-row">
-                <div class="add-filter-label">Operation Lock</div>
-                <select class="add-filter-select" id="af-olk-total-jobs" onchange="renderPage('total-jobs')">
-                  <option value="">All</option><option value="done">Done</option><option value="notdone">Not Done</option>
-                </select>
-              </div>
             </div>
           </div>
           <button class="dv-btn" onclick="refreshData('total-jobs')" style="display:inline-flex;align-items:center;gap:5px"><i class="ti ti-refresh" style="font-size:13px"></i> Refresh</button>
@@ -1687,11 +1678,13 @@ tr:hover td:first-child,tr:hover td.col-grand{background:#f8fbff}
                   <option value="">All</option>
                 </select>
               </div>
-              <div class="add-filter-row">
-                <div class="add-filter-label">Operation Lock</div>
-                <select class="add-filter-select" id="af-olk-unbilled-rev" onchange="renderPage('unbilled-rev')">
-                  <option value="">All</option><option value="done">Done</option><option value="notdone">Not Done</option>
-                </select>
+              <div class="add-filter-row olk-row">
+                <div class="add-filter-label olk-label">Operation Lock Condition</div>
+                <label class="olk-switch">
+                  <input type="checkbox" id="af-olk-unbilled-rev" onchange="renderPage('unbilled-rev')">
+                  <span class="olk-slider"></span>
+                  <span class="olk-text">Require Ops Lock = Yes</span>
+                </label>
               </div>
             </div>
           </div>
@@ -1813,11 +1806,13 @@ tr:hover td:first-child,tr:hover td.col-grand{background:#f8fbff}
                   <option value="">All</option>
                 </select>
               </div>
-              <div class="add-filter-row">
-                <div class="add-filter-label">Operation Lock</div>
-                <select class="add-filter-select" id="af-olk-unposted-cost" onchange="renderPage('unposted-cost')">
-                  <option value="">All</option><option value="done">Done</option><option value="notdone">Not Done</option>
-                </select>
+              <div class="add-filter-row olk-row">
+                <div class="add-filter-label olk-label">Operation Lock Condition</div>
+                <label class="olk-switch">
+                  <input type="checkbox" id="af-olk-unposted-cost" onchange="renderPage('unposted-cost')">
+                  <span class="olk-slider"></span>
+                  <span class="olk-text">Require Ops Lock = Yes</span>
+                </label>
               </div>
             </div>
           </div>
@@ -1959,12 +1954,6 @@ tr:hover td:first-child,tr:hover td.col-grand{background:#f8fbff}
                 <div class="add-filter-label">Customer</div>
                 <select class="add-filter-select" id="af-hbl-low-profit" onchange="renderPage('low-profit')">
                   <option value="">All</option>
-                </select>
-              </div>
-              <div class="add-filter-row">
-                <div class="add-filter-label">Operation Lock</div>
-                <select class="add-filter-select" id="af-olk-low-profit" onchange="renderPage('low-profit')">
-                  <option value="">All</option><option value="done">Done</option><option value="notdone">Not Done</option>
                 </select>
               </div>
             </div>
@@ -3368,7 +3357,7 @@ function syncUniversalFilters(oldSuffix, newSuffix) {
   ['af-mbl-', 'af-hbl-', 'af-olk-'].forEach(prefix => {
     const oldEl = document.getElementById(prefix + oldSuffix);
     const newEl = document.getElementById(prefix + newSuffix);
-    if (oldEl && newEl) newEl.value = oldEl.value;
+    if (oldEl && newEl) { if (newEl.type === 'checkbox') newEl.checked = oldEl.checked; else newEl.value = oldEl.value; }
   });
 }
 
@@ -4929,7 +4918,8 @@ document.addEventListener('click', e => {
       const pageId = b.id.replace('afb-', '');
       const mbl  = document.getElementById('af-mbl-' + pageId)?.value || '';
       const hbl  = document.getElementById('af-hbl-' + pageId)?.value || '';
-      const olk  = document.getElementById('af-olk-' + pageId)?.value || '';
+      const olkE = document.getElementById('af-olk-' + pageId);
+      const olk  = olkE ? (olkE.type === 'checkbox' ? (olkE.checked ? 'done' : '') : olkE.value) : '';
       const zone = msState['zone-'   + pageId]?.size > 0;
       const br   = msState['branch-' + pageId]?.size > 0;
       const own  = msState['owner-'  + pageId]?.size > 0;
@@ -4945,7 +4935,8 @@ function applyAdditionalFilters(data, pageId) {
   const mblVal = mblEl ? mblEl.value : '';
   const hblVal = hblEl ? hblEl.value : '';
   const olkEl  = document.getElementById('af-olk-' + pageId);
-  const olkVal = olkEl ? olkEl.value : '';   // Operation Lock: '' | 'done' | 'notdone'
+  // Operation Lock Condition toggle (Revenue / Cost pages only): ON = Ops Lock must be present
+  const olkVal = olkEl ? (olkEl.type === 'checkbox' ? (olkEl.checked ? 'done' : '') : olkEl.value) : '';
 
   if (!mblVal && !hblVal && !olkVal) return data;
 
