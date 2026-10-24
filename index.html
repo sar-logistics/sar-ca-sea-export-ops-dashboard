@@ -131,6 +131,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--text1);font-size:1
 .olk-switch input:checked + .olk-slider::after{transform:translateX(20px)}
 .olk-switch input:focus-visible + .olk-slider{outline:2px solid #93C5FD;outline-offset:2px}
 .olk-text{font-size:13px;color:#475569}
+.viewby-switch{margin-left:6px}
+.viewby-switch .olk-text b{font-weight:600;color:#1e293b;margin-left:4px}
 .ca-cur-btn{flex:1;border:0;background:transparent;color:var(--text2);font:inherit;font-size:12px;font-weight:600;padding:6px 0;border-radius:7px;cursor:pointer;transition:background .15s,color .15s}
 .ca-cur-btn:hover{background:#E5EDF7}
 .ca-cur-btn.active{background:#1F3A6E;color:#fff}
@@ -1690,30 +1692,30 @@ tr:hover td:first-child,tr:hover td.col-grand{background:#f8fbff}
           </div>
           <button class="dv-btn" onclick="refreshData('unbilled-rev')" style="display:inline-flex;align-items:center;gap:5px"><i class="ti ti-refresh" style="font-size:13px"></i> Refresh</button>
         </div>
-        <div class="kpi-row">
+        <div class="kpi-row" style="grid-template-columns:repeat(2,minmax(0,1fr))">
           <div class="kpi blue">
-            <div class="kpi-top"><i class="kpi-icon-sm ti ti-chart-bar blue"></i><span class="kpi-lbl">Total Jobs</span></div>
-            <div class="kpi-val blue" id="kv-ur-total">—</div>
+            <div class="kpi-top"><i class="kpi-icon-sm ti ti-cash-banknote blue"></i><span class="kpi-lbl">Total Unbilled Amount</span></div>
+            <div class="kpi-val blue" id="kv-ur-amount">—</div>
             <div class="kpi-sub" id="kv-ur-period">All jobs in period</div>
           </div>
           <div class="kpi orange">
-            <div class="kpi-top"><span class="kpi-dot orange"></span><span class="kpi-lbl">Unbilled Revenue Jobs</span></div>
+            <div class="kpi-top"><span class="kpi-dot orange"></span><span class="kpi-lbl">Count of Unbilled Revenue</span></div>
             <div class="kpi-val orange" id="kv-ur-flagged">—</div>
             <div class="kpi-sub">Unbilled Revenue ≠ 0</div>
           </div>
-          <div class="kpi red">
-            <div class="kpi-top"><i class="kpi-icon-sm ti ti-percentage red"></i><span class="kpi-lbl">% of such jobs</span></div>
-            <div class="kpi-val red" id="kv-ur-pct">—</div>
-            <div class="kpi-sub" id="kv-ur-pct-sub">% of total jobs</div>
-          </div>
         </div>
         <div class="sec-hd">
-          <div class="sec-title">Branch › Job Owner — Revenue Not Billed within 3 Days of SOB</div>
+          <div class="sec-title">Branch › Job Owner — Revenue not billed within 3 days of SOB</div>
           <div style="display:flex;align-items:center;gap:6px">
             <div class="sec-ct" id="sc-unbilled-rev">Loading…</div>
             <div style="width:1px;height:14px;background:var(--border);margin:0 2px"></div>
             <button class="ec-btn" onclick="expandAll('unbilled-rev')"><i class="ti ti-chevrons-down" style="font-size:12px"></i> Expand All</button>
             <button class="ec-btn" onclick="collapseAll('unbilled-rev')"><i class="ti ti-chevrons-up" style="font-size:12px"></i> Collapse All</button>
+            <label class="olk-switch viewby-switch" title="Show the table as job counts or as unbilled amounts">
+              <input type="checkbox" id="vb-unbilled-rev" onchange="renderPage('unbilled-rev')">
+              <span class="olk-slider"></span>
+              <span class="olk-text">View by <b id="vb-unbilled-rev-lbl">Count</b></span>
+            </label>
           </div>
         </div>
         <div class="tbl-wrap">
@@ -1818,30 +1820,30 @@ tr:hover td:first-child,tr:hover td.col-grand{background:#f8fbff}
           </div>
           <button class="dv-btn" onclick="refreshData('unposted-cost')" style="display:inline-flex;align-items:center;gap:5px"><i class="ti ti-refresh" style="font-size:13px"></i> Refresh</button>
         </div>
-        <div class="kpi-row">
+        <div class="kpi-row" style="grid-template-columns:repeat(2,minmax(0,1fr))">
           <div class="kpi blue">
-            <div class="kpi-top"><i class="kpi-icon-sm ti ti-chart-bar blue"></i><span class="kpi-lbl">Total Jobs</span></div>
-            <div class="kpi-val blue" id="kv-uc-total">—</div>
+            <div class="kpi-top"><i class="kpi-icon-sm ti ti-cash-banknote blue"></i><span class="kpi-lbl">Total Unposted Amount</span></div>
+            <div class="kpi-val blue" id="kv-uc-amount">—</div>
             <div class="kpi-sub" id="kv-uc-period">All jobs in period</div>
           </div>
           <div class="kpi orange">
-            <div class="kpi-top"><span class="kpi-dot orange"></span><span class="kpi-lbl">Unposted Cost Jobs</span></div>
+            <div class="kpi-top"><span class="kpi-dot orange"></span><span class="kpi-lbl">Count of Unposted Cost</span></div>
             <div class="kpi-val orange" id="kv-uc-flagged">—</div>
             <div class="kpi-sub">Unposted Cost ≠ 0</div>
           </div>
-          <div class="kpi red">
-            <div class="kpi-top"><i class="kpi-icon-sm ti ti-percentage red"></i><span class="kpi-lbl">% of such jobs</span></div>
-            <div class="kpi-val red" id="kv-uc-pct">—</div>
-            <div class="kpi-sub" id="kv-uc-pct-sub">% of total jobs</div>
-          </div>
         </div>
         <div class="sec-hd">
-          <div class="sec-title">Branch › Job Owner — Cost Not Posted within 7 Days of SOB</div>
+          <div class="sec-title">Branch › Job Owner — Cost not posted within 7 days of SOB</div>
           <div style="display:flex;align-items:center;gap:6px">
             <div class="sec-ct" id="sc-unposted-cost">Loading…</div>
             <div style="width:1px;height:14px;background:var(--border);margin:0 2px"></div>
             <button class="ec-btn" onclick="expandAll('unposted-cost')"><i class="ti ti-chevrons-down" style="font-size:12px"></i> Expand All</button>
             <button class="ec-btn" onclick="collapseAll('unposted-cost')"><i class="ti ti-chevrons-up" style="font-size:12px"></i> Collapse All</button>
+            <label class="olk-switch viewby-switch" title="Show the table as job counts or as unposted amounts">
+              <input type="checkbox" id="vb-unposted-cost" onchange="renderPage('unposted-cost')">
+              <span class="olk-slider"></span>
+              <span class="olk-text">View by <b id="vb-unposted-cost-lbl">Count</b></span>
+            </label>
           </div>
         </div>
         <div class="tbl-wrap">
@@ -3910,6 +3912,10 @@ function fmtNum(n, records, title, sub) {
 
 // Build per-column clickable cells with their own record arrays
 // counts: { colKey: count }, recs: records for this scope, cols: column defs, colKeyFn: r→colKey
+// Table cell value formatting — counts by default; set to fmtIndian while a page shows amounts
+let caCellFmt = null;
+const caFmtCell = n => caCellFmt ? caCellFmt(n) : n.toLocaleString();
+const caNz = n => Math.abs(Number(n) || 0) > 0.005;
 function colCells(counts, recs, cols, colKeyFn, titlePfx, label, colSet) {
   // Bucket records by time-column key
   const bucket = {};
@@ -3923,13 +3929,13 @@ function colCells(counts, recs, cols, colKeyFn, titlePfx, label, colSet) {
     const rs = bucket[c.key] || [];
     const t = (titlePfx + ' — ' + c.label).replace(/'/g, "\\'");
     const s = label.replace(/'/g, "\\'");
-    if (n === 0) return '<td style="text-align:right"><span class="dash">—</span></td>';
+    if (!caNz(n)) return '<td style="text-align:right"><span class="dash">—</span></td>';
     if (rs.length) {
       const id = dvReg(rs);
       const cs = colSet ? `,'${colSet}'` : '';
-      return `<td style="text-align:right"><span style="cursor:pointer;font-weight:500;color:var(--accent)" onclick="dvOpen('${id}','${t}','${s}'${cs})">${n.toLocaleString()}</span></td>`;
+      return `<td style="text-align:right"><span style="cursor:pointer;font-weight:500;color:var(--accent)" onclick="dvOpen('${id}','${t}','${s}'${cs})">${caFmtCell(n)}</span></td>`;
     }
-    return `<td style="text-align:right">${n.toLocaleString()}</td>`;
+    return `<td style="text-align:right">${caFmtCell(n)}</td>`;
   }).join('');
 }
 
@@ -4745,17 +4751,28 @@ function _renderJPAFlaggedReport(pageId, s, flagLabel, label, view, cols, filter
   const sc = document.getElementById('sc-' + pageId); if (sc) sc.textContent = totalJobs.toLocaleString()+' total · '+flaggedCount.toLocaleString()+' flagged';
   setBadge(pageId, flaggedCount);
 
+  // View by Count / Amount (switch on the page header; Unbilled Revenue page)
+  const vbEl = document.getElementById('vb-' + pageId);
+  const byAmount = !!(vbEl && vbEl.checked);
+  const amtKey = s === 'uc' ? 'unpostedCost' : 'unbilledRevenue';
+  const wt = r => byAmount ? (Number(r[amtKey]) || 0) : 1;
+  const vbLbl = document.getElementById('vb-' + pageId + '-lbl'); if (vbLbl) vbLbl.textContent = byAmount ? 'Amount' : 'Count';
+  const kAmt = document.getElementById('kv-' + s + '-amount');
+  if (kAmt) { const tot = flaggedDD.reduce((a, r) => a + (Number(r[amtKey]) || 0), 0);
+    kAmt.textContent = fmtIndian(tot); kAmt.style.cursor = 'pointer'; kAmt.onclick = () => openDrill(flaggedDD, flagLabel, label); }
+  caCellFmt = byAmount ? (n => fmtIndian(n)) : null;
+
   const flaggedMap = {};
   const colKeyFn = r => getColKey(r, view) || 'other';
   flaggedDD.forEach(r => {
     const br = r.jobBranch||r.branch|| r.location || '(No Branch)', ow = r.operator||r.jobOwner||'(Unknown)', ck = colKeyFn(r);
     if (!flaggedMap[br]) flaggedMap[br] = {};
     if (!flaggedMap[br][ow]) flaggedMap[br][ow] = {};
-    flaggedMap[br][ow][ck] = (flaggedMap[br][ow][ck] || 0) + 1;
+    flaggedMap[br][ow][ck] = (flaggedMap[br][ow][ck] || 0) + wt(r);
   });
 
   const gtFl = {}; cols.forEach(c => { gtFl[c.key] = 0; }); let gtFlGrand = 0;
-  flaggedDD.forEach(r => { const ck = colKeyFn(r); if (gtFl[ck] !== undefined) gtFl[ck]++; gtFlGrand++; });
+  flaggedDD.forEach(r => { const ck = colKeyFn(r); if (gtFl[ck] !== undefined) gtFl[ck] += wt(r); gtFlGrand += wt(r); });
 
   const isSingle = (cols.length === 1 && cols[0].single) || !showGrandTotal(view);
   const tbl = document.getElementById('tbl-' + pageId); if (tbl) tbl.classList.toggle('single-col', isSingle);
@@ -4763,7 +4780,7 @@ function _renderJPAFlaggedReport(pageId, s, flagLabel, label, view, cols, filter
   if (thead) thead.innerHTML = '<th style="min-width:260px">Branch / Job Owner</th>' + (isSingle ? '' : '<th class="col-grand">Grand Total</th>') + cols.map(c => `<th style="min-width:${isSingle?'300':'100'}px;text-align:right">${c.label}</th>`).join('');
 
   const gtFlagId = dvReg(flaggedDD);
-  const flGrandTd = isSingle ? '' : `<td class="col-grand" style="cursor:pointer" onclick="dvOpen('${gtFlagId}','Grand Total — ${flagLabel}','${label}')">${gtFlGrand > 0 ? gtFlGrand.toLocaleString() : '<span class="dash">—</span>'}</td>`;
+  const flGrandTd = isSingle ? '' : `<td class="col-grand" style="cursor:pointer" onclick="dvOpen('${gtFlagId}','Grand Total — ${flagLabel}','${label}')">${caNz(gtFlGrand) ? caFmtCell(gtFlGrand) : '<span class="dash">—</span>'}</td>`;
 
   let h = `<tr class="gt-block"><td style="padding-left:10px"><i class="rc open" id="rc-gt-${s}" onclick="toggleRows('gt-${s}',event)">▼</i> <strong>GRAND TOTAL</strong></td>${flGrandTd}${colCells(gtFl, flaggedDD, cols, colKeyFn, 'Grand Total — ' + flagLabel, label)}</tr>
   <tr class="gt-sep"><td colspan="${cols.length + (isSingle ? 1 : 2)}"></td></tr>`;
@@ -4775,7 +4792,7 @@ function _renderJPAFlaggedReport(pageId, s, flagLabel, label, view, cols, filter
     const brFl = {}; cols.forEach(c => { brFl[c.key] = 0; }); let brFlGrand = 0;
     Object.values(owMap).forEach(oc => { cols.forEach(c => { brFl[c.key] += (oc[c.key]||0); }); brFlGrand += Object.values(oc).reduce((a,b) => a+b, 0); });
     const av = `<span class="av" style="background:${avColor(br)}">${avInitials(br)}</span>`;
-    const bFtd = isSingle ? '' : `<td class="col-grand" style="cursor:pointer" onclick="dvOpen('${brFlId}','${safeBr} — ${flagLabel}','${label}')">${brFlGrand > 0 ? brFlGrand.toLocaleString() : '<span class="dash">—</span>'}</td>`;
+    const bFtd = isSingle ? '' : `<td class="col-grand" style="cursor:pointer" onclick="dvOpen('${brFlId}','${safeBr} — ${flagLabel}','${label}')">${caNz(brFlGrand) ? caFmtCell(brFlGrand) : '<span class="dash">—</span>'}</td>`;
     h += `<tr class="br-row"><td>${av}<i class="rc" id="rc-${bKey}" onclick="toggleRows('${bKey}',event)">▶</i> ${br}</td>${bFtd}${colCells(brFl, brFlagRecs, cols, colKeyFn, safeBr + ' — ' + flagLabel, label)}</tr>`;
     Object.keys(owMap).sort().forEach((ow, oi) => {
       const owKey = bKey + 'o' + oi, owCols = owMap[ow] || {};
@@ -4783,13 +4800,14 @@ function _renderJPAFlaggedReport(pageId, s, flagLabel, label, view, cols, filter
       const owFlId = dvReg(owFRecs), safeOw = ow.replace(/'/g, "\\'");
       let owFlGrand = 0; cols.forEach(c => { owFlGrand += (owCols[c.key]||0); });
       const oav = `<span class="av" style="background:${avColor(ow)}">${avInitials(ow)}</span>`;
-      const jFtd = isSingle ? '' : `<td class="col-grand" style="cursor:pointer" onclick="dvOpen('${owFlId}','${safeOw} — ${flagLabel}','${label}')">${owFlGrand > 0 ? owFlGrand.toLocaleString() : '<span class="dash">—</span>'}</td>`;
+      const jFtd = isSingle ? '' : `<td class="col-grand" style="cursor:pointer" onclick="dvOpen('${owFlId}','${safeOw} — ${flagLabel}','${label}')">${caNz(owFlGrand) ? caFmtCell(owFlGrand) : '<span class="dash">—</span>'}</td>`;
       h += `<tr class="jo-row r-br-${bKey} r-hidden" data-grp="${bKey}"><td>${oav}${ow} <span style="font-size:10px;color:var(--text3);margin-left:4px">(Job Owner)</span></td>${jFtd}${colCells(owCols, owFRecs, cols, colKeyFn, safeOw + ' — ' + flagLabel, label)}</tr>`;
     });
   });
 
-  if (!Object.keys(flaggedMap).length) h = '<tr><td colspan="99" style="text-align:center;padding:32px;color:var(--text3)">No flagged jobs for this period.</td></tr>';
+  if (!Object.keys(flaggedMap).length) h = '<tr><td colspan="99" style="text-align:center;padding:32px;color:var(--text3)">' + (s === 'ur' ? 'No unbilled revenue for this period. ✅' : s === 'uc' ? 'No unposted cost for this period. ✅' : 'No flagged jobs for this period.') + '</td></tr>';
   const tbody = document.getElementById('tbody-' + pageId); if (tbody) tbody.innerHTML = h;
+  caCellFmt = null;
 }
 
 // ── RENDER: Jobs Having Job Profit < 3% ──────────────────────
