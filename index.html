@@ -3147,6 +3147,7 @@ function handleAuth() {
   google.accounts.id.initialize({
     client_id: CLIENT_ID,
     callback: async (response) => {
+      caResetCurrencyToUSD();   // every sign-in starts in USD
       try {
         const parts = response.credential.split('.');
         const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
@@ -3270,6 +3271,7 @@ function showSigninError(msg) {
 function signOut() {
   google.accounts.id.disableAutoSelect();
   currentUser = null; currentRole = null; allSRR = [];
+  caResetCurrencyToUSD();   // next sign-in always starts in USD
   const _show = (id, v) => { const el = document.getElementById(id); if (el) el.style.display = v; };
   _show('appShell', 'none');
   _show('signInPage', 'flex');
@@ -5614,6 +5616,12 @@ let CAD_PER_USD = (() => { try { const v = parseFloat(localStorage.getItem('caCa
 const CA_CURRENCY_KEY = 'caCurrencyV2';
 try { localStorage.removeItem('caCurrency'); localStorage.removeItem(CA_CURRENCY_KEY); } catch(e) {}
 let currentCurrency = 'USD';
+// Back to USD (used on sign-in and sign-out, since signing out doesn't reload the page)
+function caResetCurrencyToUSD() {
+  currentCurrency = 'USD';
+  try { localStorage.removeItem('caCurrency'); localStorage.removeItem(CA_CURRENCY_KEY); } catch(e) {}
+  if (typeof caUpdateCurrencyButtons === 'function') caUpdateCurrencyButtons();
+}
 let manualRate = 17500; // manual USD rate set by admin
 
 function getExchangeRate() { return currentCurrency === 'USD' ? CAD_PER_USD : 1; }   // fmtIndian divides by this
