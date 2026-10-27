@@ -2250,7 +2250,6 @@ const EVA_COLLECTION = 'estimatedvsactual';
 // Same columns and order as the USA ETD/ETA drill-downs
 const CA_DV_EVA_REVENUE = [
   { key:'shipmentId',        label:'Job No.'                             },
-  { key:'lob',                label:'LOB'                                 },
   { key:'etdEtaNew',         label:'ETD/ETA New',       date:true        },
   { key:'charge',            label:'Charge'                              },
   { key:'unbilledRevenue',   label:'Unbilled Revenue',  num:true         },
@@ -2270,7 +2269,6 @@ const CA_DV_EVA_REVENUE = [
 ];
 const CA_DV_EVA_COST = [
   { key:'shipmentId',        label:'Job No.'                             },
-  { key:'lob',                label:'LOB'                                 },
   { key:'etdEtaNew',         label:'ETD/ETA New',       date:true        },
   { key:'charge',            label:'Charge'                              },
   { key:'unpostedCost',      label:'Unposted Cost',     num:true         },
@@ -5334,14 +5332,12 @@ function collapseAll(pageId) {
 // render blank.
 const DV_COLS_TOTAL_JOBS = [
   { key:'shipmentId',        label:'Shipment No'                        },
-  { key:'direction',         label:'Direction'                          },
   { key:'etdEtaNew',         label:'ETD/ETA New',    date:true          },
   { key:'location',          label:'Location'                           },
   { key:'jobOwner',          label:'Job Owner'                          },
   { key:'salesPerson',       label:'Sales Person'                       },
   { key:'customer',          label:'Customer'                           },
   { key:'cargoType',         label:'Cargo Type'                         },
-  { key:'lob',               label:'LOB'                                },
   { key:'etdLoadingPort',    label:'ETD Loading Port', date:true         },
   { key:'etaDischarge',      label:'ETA Discharge',  date:true          },
   { key:'jobDate',           label:'Job Date',       date:true          },
@@ -5361,7 +5357,6 @@ const DV_COLS_TOTAL_JOBS = [
 
 const DV_COLS_OPEN_JOBS = [
   { key:'shipmentId',        label:'Shipment No'                        },
-  { key:'direction',         label:'Direction'                          },
   { key:'etdEtaNew',         label:'ETD/ETA New',    date:true          },
   { key:'location',          label:'Location'                           },
   { key:'jobOwner',          label:'Job Owner'                          },
@@ -5369,7 +5364,6 @@ const DV_COLS_OPEN_JOBS = [
   { key:'etdLoadingPort',    label:'ETD Loading Port', date:true         },
   { key:'jobDate',           label:'Job Date',       date:true          },
   { key:'cargoType',         label:'Cargo Type'                         },
-  { key:'lob',               label:'LOB'                                },
   { key:'loadingPort',       label:'Loading Port'                       },
   { key:'dischargePort',     label:'Discharge Port'                     },
   { key:'consolNo',          label:'Consol No.'                         },
@@ -5468,7 +5462,6 @@ const DV_COLS_WIP_COST = [
 // rather than left pointing at Indonesia/Thailand-only fields.
 const DV_COLS_SRR = [
   { key:'shipmentId',          label:'Shipment No'                        },
-  { key:'direction',           label:'Direction'                          },
   { key:'etdEtaNew',           label:'ETD/ETA New',        date:true       },
   { key:'location',            label:'Location'                           },
   { key:'jobOwner',            label:'Job Owner'                          },
@@ -6103,6 +6096,26 @@ function dvFilterSearch(inp, key) {
   if (empty) empty.style.display = visible === 0 ? 'block' : 'none';
 }
 
+// Pinned (frozen) drill-down columns: set each column's sticky "left" from the real widths of
+// the columns before it, so any column set lines up without overlap.
+function caFixFrozenOffsets() {
+  const tbl = document.getElementById('dvTable');
+  if (!tbl || !(tbl.classList.contains('freeze-5') || tbl.classList.contains('freeze-6'))) return;
+  const n = tbl.classList.contains('freeze-6') ? 6 : 5;
+  const ths = tbl.querySelectorAll('thead tr:first-child th');
+  if (!ths.length) return;
+  let left = 0, css = '';
+  for (let i = 0; i < n && i < ths.length; i++) {
+    const k = i + 1;
+    css += `.dv-tbl.freeze-${n} thead th:nth-child(${k}),.dv-tbl.freeze-${n} tbody td:nth-child(${k}),.dv-tbl.freeze-${n} tfoot td:nth-child(${k}){left:${left}px !important}`;
+    left += ths[i].getBoundingClientRect().width || ths[i].offsetWidth || 0;
+  }
+  let st = document.getElementById('dv-freeze-dyn');
+  if (!st) { st = document.createElement('style'); st.id = 'dv-freeze-dyn'; document.head.appendChild(st); }
+  st.textContent = css;
+}
+window.addEventListener('resize', () => { if (document.getElementById('detailPanel')?.style.display === 'flex') caFixFrozenOffsets(); });
+
 function renderDvBody() {
   const tbody = document.getElementById('dvTbody');
   if (!dvFiltered.length) {
@@ -6127,6 +6140,7 @@ function renderDvBody() {
       return `<td${styleAttr}>${formatDvCell(r, c)}</td>`;
     }).join('')}</tr>`;
   }).join('');
+  requestAnimationFrame(caFixFrozenOffsets);
 }
 
 function updateDvFoot() {
