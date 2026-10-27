@@ -5609,10 +5609,11 @@ const DV_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','
 // Canada data is stored in CAD. The menu's currency switch shows amounts in CAD or USD.
 const CAD_PER_USD_DEFAULT = 1.4;   // used until a rate is entered in the menu
 let CAD_PER_USD = (() => { try { const v = parseFloat(localStorage.getItem('caCadPerUsd')); return v > 0 ? v : CAD_PER_USD_DEFAULT; } catch(e) { return CAD_PER_USD_DEFAULT; } })();
-// Default view is USD. Choices saved before the USD default (old key 'caCurrency') are ignored,
-// so everyone starts in USD; a CAD choice made from now on is remembered under 'caCurrencyV2'.
+// The dashboard ALWAYS opens in USD. CAD can be picked from the ☰ menu for the current visit only;
+// any previously saved currency choice is cleared so it can never override the USD default.
 const CA_CURRENCY_KEY = 'caCurrencyV2';
-let currentCurrency = (() => { try { localStorage.removeItem('caCurrency'); return localStorage.getItem(CA_CURRENCY_KEY) === 'CAD' ? 'CAD' : 'USD'; } catch(e) { return 'USD'; } })();
+try { localStorage.removeItem('caCurrency'); localStorage.removeItem(CA_CURRENCY_KEY); } catch(e) {}
+let currentCurrency = 'USD';
 let manualRate = 17500; // manual USD rate set by admin
 
 function getExchangeRate() { return currentCurrency === 'USD' ? CAD_PER_USD : 1; }   // fmtIndian divides by this
@@ -5642,7 +5643,7 @@ function caSetRate(v) {
 }
 function caSetCurrency(cur) {
   currentCurrency = cur === 'USD' ? 'USD' : 'CAD';
-  try { localStorage.setItem(CA_CURRENCY_KEY, currentCurrency); } catch(e) {}
+  // not saved: every visit starts in USD
   caUpdateCurrencyButtons();
   // Re-render the current page, keeping expanded rows open
   const openKeys = new Set();
