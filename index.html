@@ -2225,7 +2225,7 @@ function caCostNotPosted(r) { const n = caDaysSinceSob(r); return caHasUnpostedC
 function caEvaJobsPool() {
   const dir = String(currentDirection || '').toLowerCase();
   let pool = rawEvaJobs.filter(r => (r.direction || '').toLowerCase() === dir && matchesCurrentLob(r));
-  if (currentRole !== 'Admin' && currentRole !== 'Management') {
+  if (currentRole !== 'Admin' && !FULL_VIEW_ROLES.includes(currentRole)) {
     const visible = new Set((allSRR || []).map(r => String(r.shipmentId || '').trim()));
     pool = pool.filter(r => visible.has(String(r.shipmentId || '').trim()));
   }
@@ -2240,7 +2240,7 @@ function caEvaSobDays(r) {
 }
 // estimatedvsactual-only jobs for the current direction (no Job Owner, so only shown to Admin)
 function caEvaOnlyPool() {
-  if (currentRole !== 'Admin' && currentRole !== 'Management') return [];
+  if (currentRole !== 'Admin' && !FULL_VIEW_ROLES.includes(currentRole)) return [];
   return rawEvaOnly.filter(r => (r.direction || '').toLowerCase() === String(currentDirection || '').toLowerCase() && matchesCurrentLob(r));
 }
 // ── CANADA: charge-level drill-down from MongoDB "estimatedvsactual" ─────────
@@ -2525,6 +2525,8 @@ function toggleSidebar() {
   document.body.classList.toggle('sidebar-hidden', !sidebarOpen);
 }
 let currentRole = null;
+// Roles that see all data like Admin but never get the Admin Panel
+const FULL_VIEW_ROLES = ['Management', 'Strategy'];
 let allSRR = [];
 let rawSRR = [];
 let rawWIP  = [];
@@ -6581,7 +6583,7 @@ function applyRLS() {
   const isOpsHead    = currentRole === 'Ops Head';
   const isManager    = currentRole === 'Manager';
   const isTeamLeader = currentRole === 'Team Leader';
-  const isManagement = currentRole === 'Management';   // sees all data, no Admin Panel
+  const isManagement = FULL_VIEW_ROLES.includes(currentRole);   // Management / Strategy: all data, no Admin Panel
 
   // Nav visibility — unchanged, still based on the role label itself (a
   // permissions concern, separate from data scoping below)
@@ -6590,7 +6592,7 @@ function applyRLS() {
   document.getElementById('sys-usage').style.display  = (isAdmin || isHR || isOpsHead || isManager || isTeamLeader || isManagement) ? 'flex' : 'none';
   document.getElementById('sys-feedback').style.display = isAdmin ? 'flex' : 'none';
 
-  // Data scoping — Admin and Management bypass. Every other role is scoped
+  // Data scoping — Admin, Management and Strategy bypass. Every other role is scoped
   // purely by name + reporting-to position in allUsers, ignoring the
   // role/persona label entirely.
   if (isAdmin || isManagement) {
@@ -6693,7 +6695,7 @@ async function loadUsageAnalytics() {
     const isOpsHead    = currentRole === 'Ops Head';
     const isManager    = currentRole === 'Manager';
     const isTeamLeader = currentRole === 'Team Leader';
-    const isManagement = currentRole === 'Management';
+    const isManagement = FULL_VIEW_ROLES.includes(currentRole);
     const myEmail      = (currentUser.email || '').toLowerCase().trim();
 
     let visibleUsers = users;
@@ -6858,12 +6860,13 @@ function exportUsageToExcel() {
 }
 
 // ── ADMIN PANEL ──────────────────────────────────────────────
-const ROLES = ['Admin','Co-Admin','HR','Management','Ops Head','Manager','Team Leader','Job Owner','Docs','CS'];
+const ROLES = ['Admin','Co-Admin','HR','Management','Strategy','Ops Head','Manager','Team Leader','Job Owner','Docs','CS'];
 const ROLE_COLORS = {
   'Admin':        { bg:'#f3f0ff', color:'#7c3aed', border:'#c4b5fd' },
   'Co-Admin':     { bg:'#f3f0ff', color:'#7c3aed', border:'#c4b5fd' },
   'HR':           { bg:'#fdf2ff', color:'#9333ea', border:'#e9d5ff' },
   'Management':   { bg:'#e0e7ff', color:'#3730a3', border:'#a5b4fc' },
+  'Strategy':     { bg:'#ccfbf1', color:'#0f766e', border:'#5eead4' },
   'Ops Head':     { bg:'#ffe4e6', color:'#e11d48', border:'#fda4af' },
   'Manager':      { bg:'#e0f2fe', color:'#0369a1', border:'#7dd3fc' },
   'Team Leader':  { bg:'#d1fae5', color:'#065f46', border:'#6ee7b7' },
@@ -6873,6 +6876,7 @@ const ROLE_COLORS = {
 const ROLE_GROUPS = [
   { label: 'ADMINISTRATION',     roles: ['Admin','Co-Admin','HR','admin','co-admin','hr'] },
   { label: 'MANAGEMENT',         roles: ['Management','management'] },
+  { label: 'STRATEGY',           roles: ['Strategy','strategy'] },
   { label: 'OPS HEAD',           roles: ['Ops Head','ops head'] },
   { label: 'MANAGER',            roles: ['Manager','manager'] },
   { label: 'TEAM LEADER',        roles: ['Team Leader','team leader'] },
@@ -8274,7 +8278,7 @@ document.addEventListener('mousemove', e => {
 const CSV_TEMPLATE_HEADERS = ['Name','Email','Role','Phone','Reporting Manager Email','Status'];
 const CSV_REQUIRED = ['Name','Email','Role'];
 const VALID_ROLES_IMPORT = [
-  'Admin','Co-Admin','HR','Management','Ops Head','Manager','Team Leader','Job Owner'
+  'Admin','Co-Admin','HR','Management','Strategy','Ops Head','Manager','Team Leader','Job Owner'
 ];
 
 let _importRows = []; // parsed + validated rows
@@ -8708,7 +8712,8 @@ function renderOrgChart() {
   // LEFT: Admin / Co-Admin / HR — shown as standalone column
   const adminUsers      = users.filter(u => ['Admin','Co-Admin','HR'].includes(u.role));
   const managementUsers = users.filter(u => u.role === 'Management');
-  const hierarchyUsers  = users.filter(u => !['Admin','Co-Admin','HR','Management'].includes(u.role));
+  const strategyUsers   = users.filter(u => u.role === 'Strategy');
+  const hierarchyUsers  = users.filter(u => !['Admin','Co-Admin','HR', ...FULL_VIEW_ROLES].includes(u.role));
   const hierarchyEmails = new Set(hierarchyUsers.map(u => (u.email || '').toLowerCase().trim()));
 
   // Roots of hierarchy tree — normalise email comparison
@@ -8903,13 +8908,14 @@ function renderOrgChart() {
     </div>
     <div style="width:1px;background:#e2e8f0;align-self:stretch;margin:0 16px;flex-shrink:0"></div>
   ` : '';
-  const mgmtHtml = managementUsers.length ? `
+  const sideColumn = (label, list) => list.length ? `
     <div style="display:flex;flex-direction:column;gap:10px;flex-shrink:0">
-      <div style="font-size:10px;font-weight:700;color:#94a3b8;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">Management</div>
-      ${managementUsers.map(u => nodeCard(u, true)).join('')}
+      <div style="font-size:10px;font-weight:700;color:#94a3b8;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">${label}</div>
+      ${list.map(u => nodeCard(u, true)).join('')}
     </div>
     <div style="width:1px;background:#e2e8f0;align-self:stretch;margin:0 16px;flex-shrink:0"></div>
   ` : '';
+  const mgmtHtml = sideColumn('Management', managementUsers) + sideColumn('Strategy', strategyUsers);
 
   // ── Right: hierarchy trees (one per root — usually one Ops Head) ──
   const rightHtml = roots.length
