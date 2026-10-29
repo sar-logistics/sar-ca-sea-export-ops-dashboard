@@ -8634,7 +8634,7 @@ function _doRenderTeams() {
         <span style="font-size:11px;font-weight:700;color:#64748b;letter-spacing:.08em">👥 TEAMS</span>
       </div>
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
-        <button onclick="renderTeams()" style="display:inline-flex;align-items:center;gap:6px;border:1px solid #e2e8f0;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:500;color:#0f172a;background:#fff;cursor:pointer">
+        <button onclick="window._adminUsers = null; renderTeams()" style="display:inline-flex;align-items:center;gap:6px;border:1px solid #e2e8f0;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:500;color:#0f172a;background:#fff;cursor:pointer">
           ↺ Refresh
         </button>
 
@@ -8724,7 +8724,7 @@ function renderOrgChart() {
     const isMe = u.email === myEmail;
     const initials = avInitials(u.name || '?');
     const bgCol    = avColor(u.name || '?');
-    const directReports = hierarchyUsers.filter(x => x.reportingManager === u.email);
+    const directReports = hierarchyUsers.filter(x => x.reportingManager === u.email && x.email !== u.email);
 
     return `<div style="
         background:#fff;
@@ -8782,10 +8782,13 @@ function renderOrgChart() {
     </div>`;
   }
 
-  // Helper: find direct reports of a user (case-insensitive email match)
+  // Helper: find direct reports of a user (case-insensitive email match).
+  // Someone whose Reporting Manager is themselves (top of the chain) is not their own report —
+  // otherwise the tree recurses forever and the chart stays blank.
   function directReportsOf(u) {
     const email = (u.email || '').toLowerCase().trim();
-    return hierarchyUsers.filter(x => (x.reportingManager || '').toLowerCase().trim() === email);
+    return hierarchyUsers.filter(x => (x.reportingManager || '').toLowerCase().trim() === email
+                                   && (x.email || '').toLowerCase().trim() !== email);
   }
 
   // Single vertical column of job-owner cards below their team leader
