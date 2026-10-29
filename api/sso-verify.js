@@ -12,7 +12,7 @@ const HUB_ISSUER = 'sar-systems-hub';
 const DEFAULT_HUB_ORIGIN = 'https://systems.sarlogisolutions.com';
 // Fallback only: the slug the Hub actually launched (staging or production entry)
 // comes from the signature-verified token.
-const DEFAULT_DASHBOARD_SLUG = 'sar-ca-ops-test';
+const DEFAULT_DASHBOARD_SLUG = 'sar-canada-ops-test';
 
 let client;
 async function getClient() {
