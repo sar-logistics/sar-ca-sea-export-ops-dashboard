@@ -39,7 +39,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--text1);font-size:1
 .signin-logo{width:52px;height:52px;background:var(--blue-bg);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:var(--accent);margin:0 auto 16px}
 .signin-company{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:6px}
 .signin-title{font-size:22px;font-weight:700;color:#1e3a6e;line-height:1.3;margin-bottom:8px}
-.signin-sub{font-size:13px;color:#64748b;margin-bottom:24px;line-height:1.5}
+.signin-sub{font-size:13px;color:#64748b;margin-bottom:24px;line-height:1.5;text-wrap:balance}
+#googleBtnContainer{display:flex;justify-content:center;min-height:44px}   /* Google's button is fixed-width: keep it centred */
 .signin-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:10px;padding:10px 16px;border:1px solid var(--border);border-radius:8px;background:#fff;cursor:pointer;font-size:13px;font-weight:500;color:var(--text1);transition:background .15s}
 .signin-btn:hover{background:var(--bg)}
 .signin-btn svg{width:18px;height:18px;flex-shrink:0}
@@ -986,7 +987,7 @@ tr:hover td:first-child,tr:hover td.col-grand{background:#f8fbff}
       Live Dashboard
     </div>
     <div class="signin-title">Canada Ops Dashboard</div>
-    <div class="signin-sub">Sign in with your SAR Google Workspace account to<br>access the Canada Ops Dashboard.</div>
+    <div class="signin-sub">Sign in with your SAR Google Workspace account to access the Canada Ops Dashboard.</div>
     <div id="googleBtnContainer">
       <button class="signin-btn" id="signinBtn" onclick="handleAuth()">
         <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -3189,7 +3190,7 @@ function handleAuth() {
   document.getElementById('signinLoading').style.display = 'none';
   google.accounts.id.renderButton(
     document.getElementById('googleBtnContainer'),
-    { theme: 'outline', size: 'large', width: 280, text: 'continue_with' }
+    { theme: 'outline', size: 'large', width: 312, text: 'continue_with' }   // 312 = card content width (400 − 2×44 padding)
   );
 }
 
