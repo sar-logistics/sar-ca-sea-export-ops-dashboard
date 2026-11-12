@@ -3159,7 +3159,7 @@ document.addEventListener('click', e => {
 function handleAuth() {
   document.getElementById('signinLoading').style.display = 'block';
   document.getElementById('signinError').style.display = 'none';
-  document.getElementById('signinBtn').style.display = 'none';
+  const _sb = document.getElementById('signinBtn'); if (_sb) _sb.style.display = 'none';
 
   google.accounts.id.initialize({
     client_id: CLIENT_ID,
@@ -3173,7 +3173,7 @@ function handleAuth() {
       } catch(e) {
         console.error('Auth error:', e);
         showSigninError('Sign-in failed. Please try again.');
-        document.getElementById('signinBtn').style.display = 'flex';
+        caShowSigninBtn();
       }
     },
     auto_select: false,
@@ -3206,7 +3206,7 @@ async function verifyUser(info) {
 
     if (!user) {
       showSigninError('Access denied. ' + email + ' is not authorised. Contact your administrator.');
-      document.getElementById('signinBtn').style.display = 'flex';
+      caShowSigninBtn();
       return;
     }
 
@@ -3239,7 +3239,7 @@ async function verifyUser(info) {
   } catch(e) {
     console.error('verifyUser error:', e);
     showSigninError('Failed to verify access. Please try again.');
-    document.getElementById('signinBtn').style.display = 'flex';
+    caShowSigninBtn();
   }
 }
 
@@ -3308,6 +3308,24 @@ function signOut() {
       </svg>
       Continue with Google
     </button>`;
+  caAutoRenderGoogleBtn();   // straight back to a one-click Google button
+}
+
+// Render Google's own sign-in button as soon as the Google library has loaded, so a
+// single click signs in. (The placeholder button only rendered it on its first click,
+// which is why sign-in used to need two clicks.) If the library never loads, the
+// placeholder stays and still works.
+function caAutoRenderGoogleBtn(tries = 0) {
+  if (document.getElementById('appShell')?.style.display === 'flex') return;   // already signed in (e.g. Hub SSO)
+  if (window.google?.accounts?.id) { handleAuth(); return; }
+  if (tries < 100) setTimeout(() => caAutoRenderGoogleBtn(tries + 1), 100);     // wait up to ~10 s
+}
+window.addEventListener('load', () => caAutoRenderGoogleBtn());
+
+// The placeholder is replaced by Google's button, so it may not exist any more
+function caShowSigninBtn() {
+  const b = document.getElementById('signinBtn');
+  if (b) b.style.display = 'flex';
 }
 
 // ── SIDEBAR ──────────────────────────────────────────────────
