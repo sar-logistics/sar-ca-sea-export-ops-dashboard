@@ -65,8 +65,11 @@ function sumEvaByJob(evaRows) {
             organization: e.organization || '', salesPerson: e.salesPerson || '', sourceYear: e.sourceYear || '' };
       byJob.set(job, t);
     }
-    // USA naming first (unpostedCost), Canada sheet naming as fallback (unbilledCost)
-    const rev = toNum(e.unbilledRevenue), cost = toNum(e.unpostedCost !== undefined && e.unpostedCost !== '' ? e.unpostedCost : e.unbilledCost);
+    // USA naming first (unpostedCost), Canada sheet naming as fallback (unbilledCost).
+    // Financial Lock done → the line has no unbilled revenue and no unposted cost.
+    const finLocked = String(e.financialLockDate ?? '').trim() !== '';
+    const rev  = finLocked ? 0 : toNum(e.unbilledRevenue);
+    const cost = finLocked ? 0 : toNum(e.unpostedCost !== undefined && e.unpostedCost !== '' ? e.unpostedCost : e.unbilledCost);
     t.unbilledRevenue += rev;
     t.unbilledCost    += cost;
     t.lines++;
@@ -145,7 +148,7 @@ async function buildCache(db) {
   const evaRows  = await db.collection(EVA_COLLECTION)
     .find({}, { projection: { _id: 0, jobNo: 1, unbilledRevenue: 1, unbilledCost: 1, unpostedCost: 1, lob: 1, lob2: 1, direction: 1,
                                etdEtaNew: 1, etdEta: 1, ataAtd: 1, jobDate: 1, location: 1, jobOwner: 1, operationLockDate: 1,
-                               organization: 1, salesPerson: 1, sourceYear: 1 } }).toArray();
+                               organization: 1, salesPerson: 1, sourceYear: 1, financialLockDate: 1 } }).toArray();
   const all      = [...expDocs, ...impDocs, ...airExp, ...airImp, ...roadExp, ...genDocs];
   // Last time each data set was pushed from the sheets (syncedAt is stamped by the Apps Script pushes)
   const maxIso   = arr => arr.reduce((m, d) => (d && d.syncedAt && String(d.syncedAt) > m ? String(d.syncedAt) : m), '');

@@ -2320,7 +2320,7 @@ async function caOpenEvaDrill(jobRecs, title, sub, kind) {
       const d = await resp.json().catch(() => ({ error: 'HTTP ' + resp.status }));
       if (!resp.ok || d.error) throw new Error(d.error || ('HTTP ' + resp.status));
       const page = d.documents || [];
-      rows.push(...page);
+      rows.push(...page.filter(c => String(c.financialLockDate ?? '').trim() === ''));   // Financial Lock done → not unbilled / unposted
       if (page.length < PAGE) break;
     }
   } catch (e) {
