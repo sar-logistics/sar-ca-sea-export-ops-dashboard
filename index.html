@@ -4799,7 +4799,7 @@ function _renderJPAFlaggedReport(pageId, s, flagLabel, label, view, cols, filter
   const vbLbl = document.getElementById('vb-' + pageId + '-lbl'); if (vbLbl) vbLbl.textContent = byAmount ? 'Amount' : 'Count';
   const kAmt = document.getElementById('kv-' + s + '-amount');
   if (kAmt) { const tot = flaggedDD.reduce((a, r) => a + (Number(r[amtKey]) || 0), 0);
-    kAmt.textContent = fmtIndian(tot); kAmt.style.cursor = 'pointer'; kAmt.onclick = () => openDrill(flaggedDD, flagLabel, label); }
+    kAmt.textContent = fmtIndian(tot, 0); kAmt.style.cursor = 'pointer'; kAmt.onclick = () => openDrill(flaggedDD, flagLabel, label); }
   caCellFmt = byAmount ? (n => fmtIndian(n)) : null;
 
   const flaggedMap = {};
@@ -5706,13 +5706,14 @@ function updateRateLabel() {
   el.textContent = '1 USD = Rp' + avg;
 }
 
-function fmtIndian(n) {
+// decimals: 2 for tables / drill-downs, 0 for the amount KPI cards (whole numbers)
+function fmtIndian(n, decimals = 2) {
   const rate = getExchangeRate();
   const converted = n / rate;
   const abs = Math.abs(converted);
   const sign = converted < 0 ? '-' : '';
   const sym = getCurrencySymbol();
-  return sign + sym + abs.toLocaleString('en-US', { maximumFractionDigits: 2 });
+  return sign + sym + abs.toLocaleString('en-US', { maximumFractionDigits: decimals });
 }
 
 function formatDvDate(v) {
