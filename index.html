@@ -1681,14 +1681,6 @@ tr:hover td:first-child,tr:hover td.col-grand{background:#f8fbff}
                   <option value="">All</option>
                 </select>
               </div>
-              <div class="add-filter-row olk-row">
-                <div class="add-filter-label olk-label">Operation Lock Condition</div>
-                <label class="olk-switch">
-                  <input type="checkbox" id="af-olk-unbilled-rev" onchange="renderPage('unbilled-rev')">
-                  <span class="olk-slider"></span>
-                  <span class="olk-text">Require Ops Lock = Yes</span>
-                </label>
-              </div>
             </div>
           </div>
           <button class="dv-btn" onclick="refreshData('unbilled-rev')" style="display:inline-flex;align-items:center;gap:5px"><i class="ti ti-refresh" style="font-size:13px"></i> Refresh</button>
@@ -1712,6 +1704,11 @@ tr:hover td:first-child,tr:hover td.col-grand{background:#f8fbff}
             <div style="width:1px;height:14px;background:var(--border);margin:0 2px"></div>
             <button class="ec-btn" onclick="expandAll('unbilled-rev')"><i class="ti ti-chevrons-down" style="font-size:12px"></i> Expand All</button>
             <button class="ec-btn" onclick="collapseAll('unbilled-rev')"><i class="ti ti-chevrons-up" style="font-size:12px"></i> Collapse All</button>
+            <label class="olk-switch viewby-switch" title="Only count jobs whose Operation Lock is done">
+              <input type="checkbox" id="af-olk-unbilled-rev" onchange="renderPage('unbilled-rev')">
+              <span class="olk-slider"></span>
+              <span class="olk-text">Require Ops Lock</span>
+            </label>
             <label class="olk-switch viewby-switch" title="Show the table as job counts or as unbilled amounts">
               <input type="checkbox" id="vb-unbilled-rev" onchange="renderPage('unbilled-rev')">
               <span class="olk-slider"></span>
@@ -1809,14 +1806,6 @@ tr:hover td:first-child,tr:hover td.col-grand{background:#f8fbff}
                   <option value="">All</option>
                 </select>
               </div>
-              <div class="add-filter-row olk-row">
-                <div class="add-filter-label olk-label">Operation Lock Condition</div>
-                <label class="olk-switch">
-                  <input type="checkbox" id="af-olk-unposted-cost" onchange="renderPage('unposted-cost')">
-                  <span class="olk-slider"></span>
-                  <span class="olk-text">Require Ops Lock = Yes</span>
-                </label>
-              </div>
             </div>
           </div>
           <button class="dv-btn" onclick="refreshData('unposted-cost')" style="display:inline-flex;align-items:center;gap:5px"><i class="ti ti-refresh" style="font-size:13px"></i> Refresh</button>
@@ -1840,6 +1829,11 @@ tr:hover td:first-child,tr:hover td.col-grand{background:#f8fbff}
             <div style="width:1px;height:14px;background:var(--border);margin:0 2px"></div>
             <button class="ec-btn" onclick="expandAll('unposted-cost')"><i class="ti ti-chevrons-down" style="font-size:12px"></i> Expand All</button>
             <button class="ec-btn" onclick="collapseAll('unposted-cost')"><i class="ti ti-chevrons-up" style="font-size:12px"></i> Collapse All</button>
+            <label class="olk-switch viewby-switch" title="Only count jobs whose Operation Lock is done">
+              <input type="checkbox" id="af-olk-unposted-cost" onchange="renderPage('unposted-cost')">
+              <span class="olk-slider"></span>
+              <span class="olk-text">Require Ops Lock</span>
+            </label>
             <label class="olk-switch viewby-switch" title="Show the table as job counts or as unposted amounts">
               <input type="checkbox" id="vb-unposted-cost" onchange="renderPage('unposted-cost')">
               <span class="olk-slider"></span>
@@ -4976,12 +4970,10 @@ document.addEventListener('click', e => {
       const pageId = b.id.replace('afb-', '');
       const mbl  = document.getElementById('af-mbl-' + pageId)?.value || '';
       const hbl  = document.getElementById('af-hbl-' + pageId)?.value || '';
-      const olkE = document.getElementById('af-olk-' + pageId);
-      const olk  = olkE ? (olkE.type === 'checkbox' ? (olkE.checked ? 'done' : '') : olkE.value) : '';
       const zone = msState['zone-'   + pageId]?.size > 0;
       const br   = msState['branch-' + pageId]?.size > 0;
       const own  = msState['owner-'  + pageId]?.size > 0;
-      b.classList.toggle('active', !!(mbl || hbl || olk || zone || br || own));
+      b.classList.toggle('active', !!(mbl || hbl || zone || br || own));   // Ops Lock toggle sits on the table header, not in this panel
     });
   }
 });
